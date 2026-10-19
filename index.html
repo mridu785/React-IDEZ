@@ -1,0 +1,2439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>ReactLab</title>
+<style>
+:root{
+  --bg:#1e1e1e; --surface:#252526; --surface-2:#2d2d30; --surface-3:#3a3a3d;
+  --border:#3c3c3c; --text:#cccccc; --text-muted:#8c8c8c; --text-strong:#ffffff;
+  --accent:#0e639c; --accent-hover:#1177bb; --accent-text:#ffffff;
+  --danger:#f14c4c; --warning:#cca700; --success:#4ec9b0; --info:#3794ff;
+  --font-ui:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-mono:"SF Mono",Consolas,"Liberation Mono",Menlo,monospace;
+  --topbar-h:46px; --mobile-nav-h:54px; --radius:6px;
+}
+[data-theme="light"]{
+  --bg:#ffffff; --surface:#f3f3f3; --surface-2:#e8e8e8; --surface-3:#dcdcdc;
+  --border:#d0d0d0; --text:#333333; --text-muted:#6b6b6b; --text-strong:#111111;
+  --accent:#0066b8; --accent-hover:#005a9e; --accent-text:#ffffff;
+  --danger:#c72e2e; --warning:#9a6a00; --success:#0f7b6c; --info:#005fb8;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size:13px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--info);outline-offset:1px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:6px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* Layout */
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;min-height:0}
+#topbar{height:var(--topbar-h);flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:0 8px;background:var(--surface);border-bottom:1px solid var(--border);z-index:30}
+.brand{font-weight:700;letter-spacing:.3px;color:var(--text-strong);padding:0 6px;white-space:nowrap}
+#main{flex:1 1 auto;display:flex;min-height:0;min-width:0}
+#sidebar{width:250px;flex:0 0 auto;display:flex;flex-direction:column;background:var(--surface);border-right:1px solid var(--border);min-height:0}
+#workspace{flex:1 1 auto;display:flex;min-width:0;min-height:0}
+#editorPane{flex:1 1 55%;display:flex;flex-direction:column;min-width:0;min-height:0}
+#previewPane{flex:0 0 45%;display:flex;flex-direction:column;min-width:220px;border-left:1px solid var(--border);background:var(--surface);min-height:0}
+#splitHandle{flex:0 0 4px;cursor:col-resize;background:transparent}
+#splitHandle:hover{background:var(--accent)}
+#bottomPanel{flex:0 0 210px;display:flex;flex-direction:column;border-top:1px solid var(--border);background:var(--surface);min-height:0}
+body.panel-collapsed #bottomPanel{flex-basis:34px}
+body.panel-collapsed #bottomPanel .panel-content,body.panel-collapsed #bottomPanel .console-toolbar,body.panel-collapsed #bottomPanel .panel-tabs .panel-actions{display:none!important}
+#mobileNav{display:none}
+
+/* Buttons / inputs */
+.btn{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:var(--radius);padding:4px 10px;font-size:12px;line-height:20px;white-space:nowrap}
+.btn:hover{background:var(--surface-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.danger{background:transparent;border-color:var(--danger);color:var(--danger)}
+.btn.danger:hover{background:rgba(241,76,76,.12)}
+.btn.small{padding:2px 8px;font-size:11px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:0;border-radius:var(--radius);background:transparent;color:var(--text-muted);font-size:16px}
+.icon-btn:hover{background:var(--surface-2);color:var(--text)}
+.project-switch{display:flex;align-items:center;gap:6px;border:1px solid transparent;background:transparent;color:var(--text);padding:4px 8px;border-radius:var(--radius);max-width:260px}
+.project-switch:hover{background:var(--surface-2);border-color:var(--border)}
+.project-switch span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chev{color:var(--text-muted);font-size:10px}
+.topbar-spacer{flex:1}
+.save-status{font-size:11px;color:var(--text-muted);white-space:nowrap;min-width:64px;text-align:center}
+.save-status.saving{color:var(--warning)}
+.save-status.saved{color:var(--success)}
+.save-status.error{color:var(--danger)}
+input,select,textarea{border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:var(--radius);padding:5px 8px;font-size:12px;min-width:0}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);outline:none}
+textarea{resize:vertical}
+
+/* Sidebar */
+.sidebar-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted)}
+.sidebar-head .icon-btn{width:24px;height:24px;font-size:14px}
+#fileFilter{margin:0 8px 6px;flex:0 0 auto}
+.file-tree{flex:1 1 auto;overflow:auto;padding:2px 4px 10px;min-height:0}
+.tree-row{display:flex;align-items:center;gap:4px;padding:3px 6px;border-radius:4px;cursor:pointer;white-space:nowrap;font-size:12px}
+.tree-row:hover{background:var(--surface-2)}
+.tree-row.active{background:var(--accent);color:var(--accent-text)}
+.tree-row .twisty{width:14px;text-align:center;color:var(--text-muted);font-size:9px;flex:0 0 auto}
+.tree-row.active .twisty{color:inherit}
+.tree-row .icon{width:15px;text-align:center;flex:0 0 auto;font-size:11px}
+.tree-row .name{overflow:hidden;text-overflow:ellipsis}
+.sidebar-foot{padding:6px 10px;border-top:1px solid var(--border);font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Tabs */
+.tabs{display:flex;align-items:stretch;overflow-x:auto;overflow-y:hidden;background:var(--surface);border-bottom:1px solid var(--border);min-height:34px;flex:0 0 auto;scrollbar-width:thin}
+.tab{display:inline-flex;align-items:center;gap:6px;padding:0 8px 0 10px;border:0;border-right:1px solid var(--border);background:transparent;color:var(--text-muted);white-space:nowrap;font-size:12px;max-width:220px;height:34px}
+.tab:hover{color:var(--text);background:var(--surface-2)}
+.tab.active{background:var(--bg);color:var(--text-strong);box-shadow:inset 0 -2px 0 var(--accent)}
+.tab .dot{width:7px;height:7px;border-radius:50%;background:var(--warning);flex:0 0 auto}
+.tab .tab-close{border:0;background:transparent;color:inherit;padding:0 2px;font-size:12px;line-height:1;opacity:.6}
+.tab .tab-close:hover{opacity:1}
+.tab-actions{display:flex;align-items:center;padding:0 4px}
+.tab-actions .icon-btn{width:26px;height:26px}
+
+/* Editor / Preview */
+#editorContainer{flex:1 1 auto;position:relative;min-height:0;display:flex;flex-direction:column}
+#monacoHost{flex:1 1 auto;min-height:0;width:100%}
+#fallbackEditor{flex:1 1 auto;width:100%;height:100%;border:0;border-radius:0;padding:12px;font-family:var(--font-mono);font-size:13px;line-height:1.5;background:var(--bg);color:var(--text);resize:none}
+.editor-error{padding:8px 12px;background:rgba(241,76,76,.12);color:var(--danger);font-size:12px;border-bottom:1px solid var(--border)}
+#previewToolbar{display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid var(--border);background:var(--surface-2);min-height:36px;flex:0 0 auto;overflow-x:auto}
+.status-pill{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--surface-3);color:var(--text-muted);white-space:nowrap}
+.status-pill.ready{background:rgba(78,201,176,.16);color:var(--success)}
+.status-pill.running,.status-pill.compiling{background:rgba(204,167,0,.16);color:var(--warning)}
+.status-pill.failed{background:rgba(241,76,76,.16);color:var(--danger)}
+.status-pill.stale{background:rgba(55,148,255,.16);color:var(--info)}
+.status-pill.stopped{background:var(--surface-3);color:var(--text-muted)}
+#viewportSelect{padding:2px 4px;font-size:11px}
+#previewViewport{flex:1 1 auto;min-height:0;display:flex;justify-content:center;align-items:stretch;background:#111;overflow:auto;padding:0}
+#previewViewport.desktop{padding:0}
+#previewViewport.tablet{padding:10px}
+#previewViewport.mobile{padding:10px}
+#previewFrame{border:0;background:#fff;width:100%;height:100%;min-height:0;display:block}
+#previewViewport.tablet #previewFrame{width:768px;max-width:100%;height:1024px;max-height:100%;border:1px solid var(--border);border-radius:4px}
+#previewViewport.mobile #previewFrame{width:375px;max-width:100%;height:667px;max-height:100%;border:1px solid var(--border);border-radius:8px}
+#previewPane.fullscreen{position:fixed;inset:0;z-index:80;width:100vw;height:100vh;flex:none}
+#previewPane.fullscreen #previewViewport{padding:0}
+#previewPane.fullscreen #previewFrame{width:100%;height:100%;border:0;border-radius:0}
+body.preview-fullscreen #topbar,body.preview-fullscreen #sidebar,body.preview-fullscreen #editorPane,body.preview-fullscreen #bottomPanel,body.preview-fullscreen #mobileNav,body.preview-fullscreen #splitHandle{display:none!important}
+
+/* Bottom panel */
+.panel-tabs{display:flex;align-items:center;gap:2px;padding:0 8px;border-bottom:1px solid var(--border);min-height:33px;flex:0 0 auto;overflow-x:auto}
+.panel-tabs button{border:0;background:transparent;color:var(--text-muted);padding:6px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid transparent}
+.panel-tabs button.active{color:var(--text-strong);border-bottom-color:var(--accent)}
+.panel-spacer{flex:1}
+.panel-actions{display:flex;gap:4px}
+.panel-content{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.console-toolbar{display:flex;gap:6px;padding:4px 8px;border-bottom:1px solid var(--border);flex:0 0 auto}
+.console-toolbar input{flex:1}
+#consoleList{flex:1 1 auto;overflow:auto;font-family:var(--font-mono);font-size:11.5px;line-height:1.45;padding:2px 0}
+.log-entry{display:flex;gap:6px;padding:3px 10px;border-bottom:1px solid rgba(255,255,255,.035);word-break:break-word}
+.log-entry .lvl{flex:0 0 auto;font-weight:700;width:14px;text-align:center}
+.log-entry .ts{flex:0 0 auto;color:var(--text-muted);font-size:10px}
+.log-entry.log .lvl{color:var(--text-muted)}
+.log-entry.info .lvl{color:var(--info)}
+.log-entry.warn{background:rgba(204,167,0,.06)}
+.log-entry.warn .lvl{color:var(--warning)}
+.log-entry.error{background:rgba(241,76,76,.07)}
+.log-entry.error .lvl{color:var(--danger)}
+.log-entry .args{flex:1 1 auto;white-space:pre-wrap;min-width:0}
+.log-entry details summary{cursor:pointer;color:var(--info)}
+.log-entry pre{margin:2px 0 0;white-space:pre-wrap;font-size:11px;max-height:180px;overflow:auto}
+.problem-row{display:flex;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px}
+.problem-row:hover{background:var(--surface-2)}
+.problem-row .sev{flex:0 0 auto;font-weight:700;width:14px;text-align:center}
+.problem-row.error .sev{color:var(--danger)}
+.problem-row.warning .sev{color:var(--warning)}
+.problem-row .msg{flex:1 1 auto;min-width:0}
+.problem-row .loc{flex:0 0 auto;color:var(--text-muted);font-family:var(--font-mono);font-size:10px;white-space:nowrap}
+.empty-state{padding:20px;text-align:center;color:var(--text-muted);font-size:12px}
+
+/* Modals */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:12px}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 18px 60px rgba(0,0,0,.5);width:min(900px,96vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
+.modal.small{width:min(480px,96vw)}
+.modal.medium{width:min(720px,96vw)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex:0 0 auto}
+.modal-head h2{margin:0;font-size:15px;font-weight:600;color:var(--text-strong)}
+.modal-body{padding:14px 16px;overflow:auto;flex:1 1 auto;min-height:0}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:10px 16px;border-top:1px solid var(--border);flex:0 0 auto}
+.form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.form-row label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr}}
+.check-row{display:flex;align-items:center;gap:8px;margin:6px 0}
+.check-row input{width:auto}
+.dashboard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.project-card{border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--surface-2);display:flex;flex-direction:column;gap:8px;min-height:120px}
+.project-card .pc-name{font-weight:600;color:var(--text-strong);word-break:break-word}
+.project-card .pc-meta{font-size:11px;color:var(--text-muted)}
+.project-card .pc-actions{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto}
+.template-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.template-card{border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--surface-2);cursor:pointer;text-align:left}
+.template-card:hover{border-color:var(--accent);background:var(--surface-3)}
+.template-card strong{display:block;margin-bottom:4px;color:var(--text-strong)}
+.template-card span{font-size:11px;color:var(--text-muted)}
+.palette-list{max-height:50vh;overflow:auto;margin-top:8px;border:1px solid var(--border);border-radius:6px}
+.palette-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border:0;background:transparent;color:var(--text);width:100%;text-align:left;font-size:12px}
+.palette-item:hover,.palette-item.active{background:var(--accent);color:var(--accent-text)}
+.palette-item .hint{margin-left:auto;font-size:10px;opacity:.7}
+.search-result{padding:7px 10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px}
+.search-result:hover{background:var(--surface-2)}
+.search-result .file{color:var(--info);font-family:var(--font-mono);font-size:11px}
+.search-result .line{color:var(--text-muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--surface-3);color:var(--text-strong);border:1px solid var(--border);border-radius:8px;padding:9px 14px;z-index:200;font-size:12px;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:90vw}
+.loader-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:300}
+.loader-card{width:min(420px,92vw);text-align:center;padding:24px}
+.loader-title{font-size:24px;font-weight:700;color:var(--text-strong);margin-bottom:8px}
+#loaderStatus{color:var(--text-muted);font-size:13px;margin-bottom:16px}
+.spinner{width:28px;height:28px;border:3px solid var(--surface-3);border-top-color:var(--accent);border-radius:50%;margin:0 auto 16px;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-error{color:var(--danger);font-size:12px;white-space:pre-wrap;margin-bottom:12px;text-align:left}
+
+/* Mobile */
+@media(max-width:760px){
+  #topbar{gap:2px;padding:0 4px}
+  .brand{display:none}
+  .project-switch{max-width:150px;font-size:11px}
+  #btnStop,#btnPalette,#btnTheme,#btnSettings{display:none}
+  #sidebar{position:fixed;left:0;top:var(--topbar-h);bottom:var(--mobile-nav-h);z-index:50;width:82vw;max-width:320px;box-shadow:8px 0 30px rgba(0,0,0,.4);display:none}
+  body.mobile-view-files #sidebar{display:flex}
+  #main{flex-direction:column}
+  #workspace{flex-direction:column;min-height:0}
+  #editorPane{display:none;flex:1 1 auto}
+  #previewPane{display:none;flex:1 1 auto;border-left:0;min-width:0}
+  body.mobile-view-editor #editorPane{display:flex}
+  body.mobile-view-preview #previewPane{display:flex}
+  body.mobile-view-console #bottomPanel,body.mobile-view-problems #bottomPanel{display:flex;flex:1 1 auto}
+  #bottomPanel{display:none;flex:1 1 auto;height:auto}
+  #splitHandle{display:none}
+  #mobileNav{display:flex;height:var(--mobile-nav-h);flex:0 0 auto;background:var(--surface);border-top:1px solid var(--border);z-index:40}
+  #mobileNav button{flex:1;border:0;background:transparent;color:var(--text-muted);font-size:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px}
+  #mobileNav button.active{color:var(--text-strong);background:var(--surface-2)}
+  #mobileNav button .mi{font-size:16px;line-height:1}
+  #previewViewport.mobile,#previewViewport.tablet{padding:0}
+  #previewViewport.mobile #previewFrame,#previewViewport.tablet #previewFrame{border:0;border-radius:0}
+  .modal{max-height:94vh}
+  .modal-body{padding:10px}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body data-theme="dark">
+<div id="app">
+  <header id="topbar">
+    <button id="btnDashboard" class="icon-btn" title="Project dashboard" aria-label="Project dashboard">☰</button>
+    <div class="brand">ReactLab</div>
+    <button id="btnProject" class="project-switch" title="Switch project"><span id="projectName">No project</span><span class="chev">▾</span></button>
+    <span id="saveStatus" class="save-status">Idle</span>
+    <div class="topbar-spacer"></div>
+    <button id="btnRun" class="btn primary small" title="Run preview (Ctrl+Enter)">▶ Run</button>
+    <button id="btnStop" class="btn small" disabled title="Stop preview">■ Stop</button>
+    <button id="btnPalette" class="icon-btn" title="Command palette (Ctrl+K)" aria-label="Command palette">⌘</button>
+    <button id="btnSearch" class="icon-btn" title="Search project" aria-label="Search project">⌕</button>
+    <button id="btnTheme" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">◐</button>
+    <button id="btnSettings" class="icon-btn" title="Settings" aria-label="Settings">⚙</button>
+  </header>
+  <div id="main">
+    <aside id="sidebar" aria-label="File explorer">
+      <div class="sidebar-head"><span>Explorer</span><div><button id="btnNewFile" class="icon-btn" title="New file">+</button><button id="btnNewFolder" class="icon-btn" title="New folder">▤</button></div></div>
+      <input id="fileFilter" placeholder="Filter files…" aria-label="Filter files">
+      <div id="fileTree" class="file-tree"></div>
+      <div class="sidebar-foot"><span id="storageInfo">Storage: —</span></div>
+    </aside>
+    <div id="workspace">
+      <section id="editorPane" aria-label="Code editor">
+        <div id="tabs" class="tabs"></div>
+        <div id="editorContainer">
+          <div id="monacoHost"></div>
+          <textarea id="fallbackEditor" hidden spellcheck="false" aria-label="Basic fallback editor"></textarea>
+          <div id="editorError" class="editor-error" hidden></div>
+        </div>
+      </section>
+      <div id="splitHandle" aria-hidden="true"></div>
+      <section id="previewPane" aria-label="Live preview">
+        <div id="previewToolbar">
+          <span id="previewStatus" class="status-pill">Idle</span>
+          <select id="viewportSelect" title="Preview viewport" aria-label="Preview viewport">
+            <option value="desktop">Desktop</option>
+            <option value="tablet">Tablet</option>
+            <option value="mobile">Mobile</option>
+          </select>
+          <button id="btnRefresh" class="icon-btn" title="Refresh preview" aria-label="Refresh preview">⟳</button>
+          <button id="btnFullscreenPreview" class="icon-btn" title="Full-screen preview" aria-label="Full-screen preview">⛶</button>
+          <button id="btnToggleConsole" class="btn small" title="Toggle console">Console</button>
+        </div>
+        <div id="previewViewport" class="desktop">
+          <iframe id="previewFrame" title="React preview" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads"></iframe>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div id="bottomPanel">
+    <div class="panel-tabs">
+      <button data-panel="console" class="active">Console <span id="consoleCount"></span></button>
+      <button data-panel="problems">Problems <span id="problemCount"></span></button>
+      <div class="panel-spacer"></div>
+      <div class="panel-actions">
+        <button id="btnClearConsole" class="btn small">Clear</button>
+        <button id="btnCopyConsole" class="btn small">Copy</button>
+        <button id="btnCollapsePanel" class="icon-btn" title="Collapse panel" aria-label="Collapse panel">▾</button>
+      </div>
+    </div>
+    <div id="consolePanel" class="panel-content">
+      <div class="console-toolbar">
+        <select id="consoleFilter" aria-label="Console filter">
+          <option value="all">All</option><option value="log">Log</option><option value="info">Info</option><option value="warn">Warn</option><option value="error">Error</option>
+        </select>
+        <input id="consoleSearch" placeholder="Filter output…" aria-label="Filter console output">
+      </div>
+      <div id="consoleList"></div>
+    </div>
+    <div id="problemsPanel" class="panel-content" hidden>
+      <div id="problemsList"></div>
+    </div>
+  </div>
+  <nav id="mobileNav" aria-label="Mobile navigation">
+    <button data-view="files"><span class="mi">▤</span>Files</button>
+    <button data-view="editor" class="active"><span class="mi">⌨</span>Editor</button>
+    <button data-view="preview"><span class="mi">▶</span>Preview</button>
+    <button data-view="console"><span class="mi">≡</span>Console</button>
+    <button data-view="problems"><span class="mi">!</span>Problems</button>
+  </nav>
+</div>
+<div id="modalRoot"></div>
+<div id="toast" hidden></div>
+<input id="zipInput" type="file" accept=".zip,application/zip" hidden>
+<div id="appLoader" class="loader-overlay">
+  <div class="loader-card">
+    <div class="loader-title">ReactLab</div>
+    <div class="spinner"></div>
+    <div id="loaderStatus">Starting…</div>
+    <div id="loaderError" class="loader-error" hidden></div>
+    <button id="loaderRetry" class="btn primary" hidden>Retry</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* =========================================================================
+   ReactLab — single-file React IDE
+   ========================================================================= */
+
+const CDN = {
+  react: 'https://unpkg.com/react@18.3.1/umd/react.development.js',
+  reactDom: 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js',
+  babel: 'https://unpkg.com/@babel/standalone@7.29.0/babel.min.js',
+  jszip: 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+  monacoLoader: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs/loader.js',
+  monacoVs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs'
+};
+
+const DB_NAME = 'reactlab-db';
+const DB_VERSION = 1;
+
+const DEFAULT_SETTINGS = {
+  theme: 'dark', fontSize: 14, fontFamily: '"SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+  tabSize: 2, wordWrap: 'off', minimap: false, lineNumbers: true,
+  autoRun: true, previewDebounce: 700, entry: 'main.jsx',
+  defaultViewport: 'desktop', consoleVisible: true, errorOverlay: true,
+  lastProjectId: null, mobileView: 'editor'
+};
+
+const state = {
+  db: null, settings: { ...DEFAULT_SETTINGS }, projects: [], project: null,
+  openTabs: [], activeFile: null, dirtyFiles: new Set(),
+  diagnostics: [], console: [], consoleFilter: 'all', consoleSearch: '',
+  models: new Map(), viewStates: {}, editor: null, monaco: null,
+  sessionId: null, buildCounter: 0, compileTimer: null, saveTimer: null,
+  status: 'idle', previewDoc: '', mobileView: 'editor',
+  monacoFailed: false, fallbackEditor: null
+};
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function uuid() {
+  try { if (crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+  return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function normalizePath(p) {
+  p = String(p).replace(/\\/g, '/');
+  const parts = [];
+  for (const part of p.split('/')) {
+    if (!part || part === '.') continue;
+    if (part === '..') { parts.pop(); continue; }
+    parts.push(part);
+  }
+  return parts.join('/');
+}
+function dirname(p) {
+  const n = normalizePath(p);
+  const i = n.lastIndexOf('/');
+  return i === -1 ? '' : n.slice(0, i);
+}
+function basename(p) { const n = normalizePath(p); const i = n.lastIndexOf('/'); return i === -1 ? n : n.slice(i + 1); }
+function extname(p) {
+  const b = basename(p); const i = b.lastIndexOf('.');
+  return i <= 0 ? '' : b.slice(i).toLowerCase();
+}
+function joinPath(a, b) { const j = normalizePath((a ? a + '/' : '') + b); return j; }
+function formatDate(ts) {
+  if (!ts) return '—';
+  try { return new Date(ts).toLocaleString(); } catch (e) { return '—'; }
+}
+function toast(msg, ms = 3200) {
+  const el = $('#toast');
+  el.textContent = msg; el.hidden = false;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { el.hidden = true; }, ms);
+}
+function downloadBlob(blob, name) {
+  const a = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+function setLoaderStatus(t) { $('#loaderStatus').textContent = t; }
+function hideLoader() { $('#appLoader').hidden = true; }
+function showLoaderError(err) {
+  $('#loaderError').hidden = false;
+  $('#loaderError').textContent = (err && err.message) ? err.message : String(err);
+  $('#loaderRetry').hidden = false;
+}
+
+/* -------------------------------------------------------------------------
+   Dependency loading
+   ------------------------------------------------------------------------- */
+function loadScript(url, timeout = 25000) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = url; s.async = true;
+    let done = false;
+    const t = setTimeout(() => {
+      if (done) return; done = true; s.remove();
+      reject(new Error('Timed out loading ' + url));
+    }, timeout);
+    s.onload = () => { if (done) return; done = true; clearTimeout(t); resolve(); };
+    s.onerror = () => { if (done) return; done = true; clearTimeout(t); s.remove(); reject(new Error('Failed to load ' + url)); };
+    document.head.appendChild(s);
+  });
+}
+
+async function loadMonaco() {
+  await loadScript(CDN.monacoLoader);
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const fail = e => { if (!settled) { settled = true; reject(e); } };
+    try {
+      window.MonacoEnvironment = {
+        getWorkerUrl: function () { return CDN.monacoVs + '/base/worker/workerMain.js'; }
+      };
+      window.require.config({ paths: { vs: CDN.monacoVs } });
+      window.require(['vs/editor/editor.main'], () => {
+        if (!settled) { settled = true; resolve(window.monaco); }
+      });
+    } catch (e) { fail(e); }
+    setTimeout(() => fail(new Error('Monaco Editor failed to initialise within 30 seconds.')), 30000);
+  });
+}
+
+/* -------------------------------------------------------------------------
+   IndexedDB
+   ------------------------------------------------------------------------- */
+function openDatabase() {
+  return new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) { reject(new Error('IndexedDB is not available in this browser.')); return; }
+    let req;
+    try { req = indexedDB.open(DB_NAME, DB_VERSION); } catch (e) { reject(e); return; }
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains('projects')) db.createObjectStore('projects', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('preferences')) db.createObjectStore('preferences', { keyPath: 'key' });
+      if (!db.objectStoreNames.contains('snapshots')) {
+        const s = db.createObjectStore('snapshots', { keyPath: 'id' });
+        s.createIndex('projectId', 'projectId');
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error('Could not open IndexedDB.'));
+    req.onblocked = () => reject(new Error('IndexedDB upgrade blocked. Close other ReactLab tabs and retry.'));
+  });
+}
+function dbGetAll(store) {
+  return new Promise((res, rej) => {
+    const tx = state.db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => res(req.result || []);
+    req.onerror = () => rej(req.error);
+  });
+}
+function dbGet(store, key) {
+  return new Promise((res, rej) => {
+    const tx = state.db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+function dbPut(store, value) {
+  return new Promise((res, rej) => {
+    const tx = state.db.transaction(store, 'readwrite');
+    tx.objectStore(store).put(value);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+    tx.onabort = () => rej(tx.error || new Error('Transaction aborted'));
+  });
+}
+function dbDelete(store, key) {
+  return new Promise((res, rej) => {
+    const tx = state.db.transaction(store, 'readwrite');
+    tx.objectStore(store).delete(key);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+
+/* -------------------------------------------------------------------------
+   Settings / project persistence
+   ------------------------------------------------------------------------- */
+async function loadSettings() {
+  try {
+    const rec = await dbGet('preferences', 'settings');
+    state.settings = { ...DEFAULT_SETTINGS, ...(rec && rec.value ? rec.value : {}) };
+  } catch (e) { state.settings = { ...DEFAULT_SETTINGS }; }
+}
+async function persistSettings() {
+  try { await dbPut('preferences', { key: 'settings', value: state.settings }); } catch (e) { console.warn('Could not save settings', e); }
+}
+function setSaveStatus(text, cls = '') {
+  const el = $('#saveStatus'); el.textContent = text;
+  el.className = 'save-status ' + cls;
+}
+async function persistProject(project) {
+  await dbPut('projects', project);
+  const i = state.projects.findIndex(p => p.id === project.id);
+  if (i >= 0) state.projects[i] = project; else state.projects.push(project);
+}
+function scheduleAutosave() {
+  setSaveStatus('Unsaved', 'saving');
+  clearTimeout(state.saveTimer);
+  state.saveTimer = setTimeout(() => saveProjectNow(), 850);
+}
+async function saveProjectNow() {
+  if (!state.project || !state.db) return;
+  const p = state.project;
+  const revision = p.updatedAt;
+  clearTimeout(state.saveTimer);
+  setSaveStatus('Saving…', 'saving');
+  try {
+    await persistProject(p);
+    if (p.updatedAt === revision) {
+      state.dirtyFiles.clear();
+      setSaveStatus('Saved', 'saved');
+      renderTabs();
+    } else {
+      setSaveStatus('Unsaved', 'saving');
+      scheduleAutosave();
+    }
+  } catch (err) {
+    setSaveStatus('Save failed', 'error');
+    toast('Save failed: ' + (err && err.message ? err.message : err));
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Path / import resolution
+   ------------------------------------------------------------------------- */
+function resolveImport(spec, importer, files) {
+  if (spec === 'react' || spec === 'react-dom' || spec === 'react-dom/client') return spec;
+  if (!spec.startsWith('.') && !spec.startsWith('/')) return null;
+  const base = spec.startsWith('/') ? normalizePath(spec) : joinPath(dirname(importer), spec);
+  const candidates = [
+    base, base + '.jsx', base + '.js', base + '.tsx', base + '.ts',
+    base + '.json', base + '.css',
+    base + '/index.jsx', base + '/index.js', base + '/index.tsx', base + '/index.ts'
+  ];
+  for (const c of candidates) { if (files[c]) return c; }
+  return null;
+}
+function extractImports(code) {
+  const out = [];
+  const re = /(?:import\s+(?:[^'"]*?\s+from\s+)?|require\s*\(\s*|import\s*\(\s*)['"]([^'"]+)['"]/g;
+  let m;
+  while ((m = re.exec(code))) { if (m[1] && !out.includes(m[1])) out.push(m[1]); }
+  return out;
+}
+
+/* -------------------------------------------------------------------------
+   Compiler / bundler
+   ------------------------------------------------------------------------- */
+function transformModule(code, filename, isTS) {
+  const presets = [];
+  if (isTS) presets.push(['typescript', { allExtensions: true, isTSX: true }]);
+  presets.push(['react', { runtime: 'classic' }]);
+  const result = Babel.transform(code, {
+    filename, presets,
+    plugins: ['transform-modules-commonjs'],
+    sourceType: 'module', compact: false, retainLines: false
+  });
+  return result.code;
+}
+
+function compileProject(snapshot) {
+  const files = snapshot.files || {};
+  const entry = normalizePath(snapshot.entry || 'main.jsx');
+  const diagnostics = [];
+  const modules = {};
+  const resolutionMaps = {};
+  const cssParts = [];
+  const visited = new Set();
+
+  if (!files[entry]) {
+    diagnostics.push({ severity: 'error', message: 'Entry file not found: ' + entry, file: entry, source: 'compiler' });
+    return { diagnostics, fatal: true };
+  }
+
+  function visit(id) {
+    if (visited.has(id)) return;
+    visited.add(id);
+    const file = files[id];
+    if (!file) return;
+    const ext = extname(id);
+    if (ext === '.css') { cssParts.push(file.content || ''); modules[id] = 'module.exports = {};'; return; }
+    if (ext === '.json') {
+      try { modules[id] = 'module.exports = ' + JSON.stringify(JSON.parse(file.content || '{}')) + ';'; }
+      catch (e) { diagnostics.push({ severity: 'error', message: 'Invalid JSON in ' + id + ': ' + e.message, file: id, source: 'compiler' }); }
+      return;
+    }
+    if (!['.jsx', '.js', '.tsx', '.ts'].includes(ext)) return;
+
+    let transformed;
+    try {
+      transformed = transformModule(file.content || '', id, ext === '.ts' || ext === '.tsx');
+    } catch (err) {
+      diagnostics.push({
+        severity: 'error', message: err.message || String(err), file: id,
+        line: err.loc && err.loc.line, column: err.loc && err.loc.column, source: 'compiler'
+      });
+      return;
+    }
+    modules[id] = transformed;
+    resolutionMaps[id] = {};
+    for (const spec of extractImports(file.content || '')) {
+      const resolved = resolveImport(spec, id, files);
+      if (!resolved) {
+        diagnostics.push({
+          severity: 'error', file: id, source: 'resolver',
+          message: spec.startsWith('.') || spec.startsWith('/')
+            ? `Cannot resolve "${spec}" from ${id}.`
+            : `Unsupported package "${spec}". Only "react", "react-dom" and "react-dom/client" are available in this browser runtime.`
+        });
+        continue;
+      }
+      resolutionMaps[id][spec] = resolved;
+      if (files[resolved]) visit(resolved);
+    }
+  }
+
+  visit(entry);
+  const hasErrors = diagnostics.some(d => d.severity === 'error');
+  if (hasErrors) return { diagnostics, fatal: true };
+
+  const bundle = `
+(function(){
+  var modules = {
+${Object.entries(modules).map(([id, code]) => JSON.stringify(id) + ': function(module, exports, require){\n' + code + '\n}').join(',\n')}
+  };
+  var resolutionMaps = ${JSON.stringify(resolutionMaps)};
+  var cache = {};
+  function load(id){
+    if (id === 'react') return window.React;
+    if (id === 'react-dom') return window.ReactDOM;
+    if (id === 'react-dom/client') return { createRoot: window.ReactDOM.createRoot };
+    if (cache[id]) return cache[id].exports;
+    var fn = modules[id];
+    if (!fn) throw new Error('Module not found: ' + id);
+    var module = { exports: {} };
+    cache[id] = module;
+    function localRequire(spec){
+      var resolved = (resolutionMaps[id] && resolutionMaps[id][spec]) || spec;
+      return load(resolved);
+    }
+    fn(module, module.exports, localRequire);
+    return module.exports;
+  }
+  try { load(${JSON.stringify(entry)}); }
+  catch (e) { window.__reactlabRuntimeError(e); }
+})();
+`;
+  return { modules, resolutionMaps, css: cssParts.join('\n'), bundle, diagnostics };
+}
+
+/* -------------------------------------------------------------------------
+   Preview document
+   ------------------------------------------------------------------------- */
+function buildPreviewDocument(result, session) {
+  const css = String(result.css || '').replace(/<\/style/gi, '<\\/style');
+  const bundle = String(result.bundle || '').replace(/<\/script/gi, '<\\/script');
+  const bridge = `
+(function(){
+  var SESSION = ${JSON.stringify(session)};
+  var parent = window.parent;
+  function safeSerialize(v, depth, seen) {
+    depth = depth || 0;
+    seen = seen || [];
+    if (v === null) return null;
+    if (v === undefined) return 'undefined';
+    var t = typeof v;
+    if (t === 'string' || t === 'number' || t === 'boolean') return v;
+    if (t === 'function') return '[Function ' + (v.name || 'anonymous') + ']';
+    if (t === 'symbol') return '[Symbol]';
+    if (t === 'bigint') return String(v) + 'n';
+    if (depth > 4) return '[…]';
+    try { if (seen.indexOf(v) !== -1) return '[Circular]'; } catch(e) {}
+    seen.push(v);
+    try {
+      if (Array.isArray(v)) return v.slice(0, 60).map(function(x){ return safeSerialize(x, depth + 1, seen); });
+      var out = {};
+      var keys = Object.keys(v).slice(0, 60);
+      for (var i = 0; i < keys.length; i++) out[keys[i]] = safeSerialize(v[keys[i]], depth + 1, seen);
+      return out;
+    } catch (e) { return '[Object]'; }
+  }
+  function post(type, payload) {
+    try {
+      var msg = { __reactlab: true, session: SESSION, type: type };
+      if (payload) for (var k in payload) msg[k] = payload[k];
+      parent.postMessage(msg, '*');
+    } catch (e) {}
+  }
+  ['log','info','warn','error','debug'].forEach(function(level){
+    var orig = console[level] ? console[level].bind(console) : function(){};
+    console[level] = function(){
+      orig.apply(null, arguments);
+      var args = [];
+      for (var i = 0; i < arguments.length; i++) args.push(safeSerialize(arguments[i], 0, []));
+      post('console', { level: level, args: args, ts: Date.now() });
+    };
+  });
+  window.__reactlabRuntimeError = function(err){
+    try {
+      var msg = err && err.message ? err.message : String(err);
+      var stack = err && err.stack ? err.stack : '';
+      var ov = document.getElementById('__reactlab_overlay');
+      if (ov) {
+        ov.hidden = false;
+        ov.innerHTML = '<div class="__rl_box"><h2>Runtime error</h2><pre></pre></div>';
+        var pre = ov.querySelector('pre');
+        if (pre) pre.textContent = msg + (stack ? '\\n' + stack : '');
+      }
+      post('runtimeError', { message: msg, stack: stack });
+    } catch (e) {}
+  };
+  window.addEventListener('error', function(e){
+    window.__reactlabRuntimeError(e.error || new Error(e.message || 'Script error'));
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    window.__reactlabRuntimeError(e.reason || new Error('Unhandled promise rejection'));
+  });
+  window.addEventListener('load', function(){
+    setTimeout(function(){
+      if (!window.React || !window.ReactDOM) {
+        post('resourceError', { message: 'React or ReactDOM failed to load from the CDN. Check your network connection.' });
+      } else {
+        post('ready', {});
+      }
+    }, 30);
+  });
+})();
+`;
+  return `<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>${css}</style>
+<style>
+html,body{margin:0;min-height:100%}
+#__reactlab_overlay{position:fixed;inset:0;background:rgba(10,10,10,.82);z-index:2147483647;display:flex;align-items:flex-start;justify-content:center;padding:24px;overflow:auto}
+#__reactlab_overlay[hidden]{display:none}
+#__reactlab_overlay .__rl_box{width:min(760px,100%);background:#1e1e1e;color:#f48771;border:1px solid #5a1d1d;border-radius:10px;padding:16px;font-family:monospace;font-size:13px;box-shadow:0 20px 70px rgba(0,0,0,.6)}
+#__reactlab_overlay h2{margin:0 0 10px;font-size:16px;color:#f14c4c}
+#__reactlab_overlay pre{margin:0;white-space:pre-wrap;word-break:break-word;max-height:50vh;overflow:auto}
+</style></head>
+<body>
+<div id="root"></div>
+<div id="__reactlab_overlay" hidden></div>
+<script src="${CDN.react}"><\/script>
+<script src="${CDN.reactDom}"><\/script>
+<script>${bridge}<\/script>
+<script>${bundle}<\/script>
+</body></html>`;
+}
+
+/* -------------------------------------------------------------------------
+   Monaco
+   ------------------------------------------------------------------------- */
+function langFor(path) {
+  const e = extname(path);
+  return ({ jsx: 'javascript', js: 'javascript', mjs: 'javascript', cjs: 'javascript',
+    tsx: 'typescript', ts: 'typescript', css: 'css', html: 'html', htm: 'html',
+    json: 'json', md: 'markdown', markdown: 'markdown', svg: 'xml', xml: 'xml' })[e] || 'plaintext';
+}
+function monacoTheme() { return state.settings.theme === 'light' ? 'vs' : 'vs-dark'; }
+
+function setupMonacoLanguage() {
+  const ts = monaco.languages.typescript;
+  ts.javascriptDefaults.setCompilerOptions({
+    target: ts.ScriptTarget.ES2020,
+    allowNonTsExtensions: true,
+    jsx: ts.JsxEmit.React,
+    allowJs: true,
+    checkJs: false,
+    noEmit: true
+  });
+  ts.javascriptDefaults.setDiagnosticsOptions({ noSemanticValidation: true, noSyntaxValidation: false });
+  ts.typescriptDefaults.setDiagnosticsOptions({ noSemanticValidation: true, noSyntaxValidation: false });
+  try {
+    ts.javascriptDefaults.addExtraLib(
+      'declare namespace React { function createElement(...args:any[]):any; const Fragment:any; }\n' +
+      'declare module "react" { export = React; }\n' +
+      'declare namespace JSX { interface IntrinsicElements { [elemName:string]: any; } }\n',
+      'reactlab-react.d.ts'
+    );
+  } catch (e) {}
+  const suggestions = ['useState','useEffect','useMemo','useCallback','useRef','useReducer','useContext','createContext','createRoot','createElement','Fragment','StrictMode'].map(label => ({
+    label, kind: monaco.languages.CompletionItemKind.Function, insertText: label,
+    detail: 'ReactLab suggestion'
+  }));
+  ['javascript','typescript'].forEach(lang => {
+    monaco.languages.registerCompletionItemProvider(lang, {
+      provideCompletionItems: () => ({ suggestions: suggestions.map(s => ({ ...s, range: undefined })) })
+    });
+  });
+}
+
+function createEditor() {
+  const host = $('#monacoHost');
+  state.editor = monaco.editor.create(host, {
+    model: null, theme: monacoTheme(), automaticLayout: true,
+    fontSize: state.settings.fontSize, fontFamily: state.settings.fontFamily,
+    tabSize: state.settings.tabSize, wordWrap: state.settings.wordWrap,
+    minimap: { enabled: !!state.settings.minimap },
+    lineNumbers: state.settings.lineNumbers ? 'on' : 'off',
+    scrollBeyondLastLine: false, smoothScrolling: true, cursorBlinking: 'smooth',
+    renderWhitespace: 'selection', bracketPairColorization: { enabled: true },
+    suggestOnTriggerCharacters: true, quickSuggestions: true,
+    fixedOverflowWidgets: true, padding: { top: 8 }
+  });
+  state.editor.onDidChangeModelContent(() => {
+    const model = state.editor.getModel();
+    if (!model || !model._reactlabPath || !state.project) return;
+    const path = model._reactlabPath;
+    const current = state.project.files[path];
+    if (!current) return;
+    const value = model.getValue();
+    if (current.content === value) return;
+    current.content = value;
+    state.project.updatedAt = Date.now();
+    state.dirtyFiles.add(path);
+    renderTabs();
+    scheduleAutosave();
+    if (state.settings.autoRun) scheduleCompile();
+    else setStatus('stale');
+  });
+}
+
+function initMonaco() {
+  return loadMonaco().then(m => {
+    state.monaco = m;
+    setupMonacoLanguage();
+    createEditor();
+    state.monacoFailed = false;
+    $('#monacoHost').hidden = false;
+    $('#fallbackEditor').hidden = true;
+    $('#editorError').hidden = true;
+    if (state.activeFile) openFile(state.activeFile);
+  }).catch(err => {
+    state.monacoFailed = true;
+    $('#monacoHost').hidden = true;
+    $('#fallbackEditor').hidden = false;
+    $('#editorError').hidden = false;
+    $('#editorError').textContent = 'Monaco Editor failed to load: ' + err.message + ' — using the basic fallback editor. Reload to retry.';
+    const ta = $('#fallbackEditor');
+    if (state.activeFile) ta.value = fileContent(state.activeFile);
+    ta.oninput = () => {
+      if (!state.activeFile || !state.project) return;
+      const current = state.project.files[state.activeFile];
+      if (!current || current.content === ta.value) return;
+      current.content = ta.value;
+      state.project.updatedAt = Date.now();
+      state.dirtyFiles.add(state.activeFile);
+      renderTabs();
+      scheduleAutosave();
+      if (state.settings.autoRun) scheduleCompile(); else setStatus('stale');
+    };
+  });
+}
+
+function getOrCreateModel(path) {
+  if (state.models.has(path)) return state.models.get(path);
+  const content = fileContent(path);
+  const uri = monaco.Uri.parse('file:///' + state.project.id + '/' + path);
+  const model = monaco.editor.createModel(content, langFor(path), uri);
+  model._reactlabPath = path;
+  state.models.set(path, model);
+  return model;
+}
+function disposeModels() {
+  state.models.forEach(m => { try { m.dispose(); } catch (e) {} });
+  state.models.clear();
+  state.viewStates = {};
+}
+function fileContent(path) {
+  const f = state.project && state.project.files[path];
+  return f && typeof f.content === 'string' ? f.content : '';
+}
+
+/* -------------------------------------------------------------------------
+   File operations / tabs / explorer
+   ------------------------------------------------------------------------- */
+function openFile(path, line, column) {
+  if (!state.project || !state.project.files[path]) return;
+  if (state.activeFile && state.editor && state.editor.getModel()) {
+    state.viewStates[state.activeFile] = state.editor.saveViewState();
+  }
+  if (!state.openTabs.includes(path)) state.openTabs.push(path);
+  state.activeFile = path;
+  if (state.editor && !state.monacoFailed) {
+    const model = getOrCreateModel(path);
+    state.editor.setModel(model);
+    if (state.viewStates[path]) { try { state.editor.restoreViewState(state.viewStates[path]); } catch (e) {} }
+    if (line) {
+      const pos = { lineNumber: Math.max(1, line), column: Math.max(1, column || 1) };
+      state.editor.revealPositionInCenter(pos);
+      state.editor.setPosition(pos);
+    }
+    state.editor.focus();
+  } else {
+    $('#fallbackEditor').value = fileContent(path);
+  }
+  renderTabs(); renderFileTree();
+}
+
+function closeTab(path) {
+  const i = state.openTabs.indexOf(path);
+  if (i < 0) return;
+  state.openTabs.splice(i, 1);
+  if (state.activeFile === path) {
+    state.activeFile = state.openTabs[Math.max(0, i - 1)] || state.openTabs[0] || null;
+    if (state.activeFile) openFile(state.activeFile); else if (state.editor) state.editor.setModel(null);
+  }
+  renderTabs();
+}
+
+function renderTabs() {
+  const host = $('#tabs'); host.innerHTML = '';
+  state.openTabs.forEach(path => {
+    const tab = document.createElement('button');
+    tab.className = 'tab' + (path === state.activeFile ? ' active' : '');
+    tab.title = path;
+    tab.innerHTML = `<span class="dot" ${state.dirtyFiles.has(path) ? '' : 'style="display:none"'}></span><span>${escapeHtml(basename(path))}</span><button class="tab-close" aria-label="Close ${escapeHtml(path)}">×</button>`;
+    tab.onclick = e => { if (e.target.closest('.tab-close')) return; openFile(path); };
+    tab.querySelector('.tab-close').onclick = e => { e.stopPropagation(); closeTab(path); };
+    host.appendChild(tab);
+  });
+  const actions = document.createElement('div');
+  actions.className = 'tab-actions';
+  actions.innerHTML = '<button class="icon-btn" title="New file" aria-label="New file">+</button>';
+  actions.firstChild.onclick = createFilePrompt;
+  host.appendChild(actions);
+}
+
+function buildTree(files) {
+  const root = { children: {}, path: '' };
+  for (const path of Object.keys(files).sort()) {
+    const parts = path.split('/');
+    let node = root;
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      if (i === parts.length - 1) {
+        node.children[part] = { type: 'file', name: part, path };
+      } else {
+        if (!node.children[part]) node.children[part] = { type: 'folder', name: part, path: parts.slice(0, i + 1).join('/'), children: {} };
+        node = node.children[part];
+      }
+    }
+  }
+  return root;
+}
+
+const collapsedFolders = new Set();
+
+function renderFileTree() {
+  const host = $('#fileTree');
+  if (!state.project) { host.innerHTML = '<div class="empty-state">No project open.</div>'; return; }
+  const filter = ($('#fileFilter').value || '').toLowerCase().trim();
+  const root = buildTree(state.project.files);
+  host.innerHTML = '';
+  function walk(node, depth) {
+    const entries = Object.values(node.children).sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+    for (const entry of entries) {
+      if (filter && !entry.path.toLowerCase().includes(filter)) continue;
+      const row = document.createElement('div');
+      row.className = 'tree-row' + (entry.path === state.activeFile ? ' active' : '');
+      row.style.paddingLeft = (6 + depth * 12) + 'px';
+      row.dataset.path = entry.path;
+      row.innerHTML = entry.type === 'folder'
+        ? `<span class="twisty">${collapsedFolders.has(entry.path) ? '▸' : '▾'}</span><span class="icon">▣</span><span class="name">${escapeHtml(entry.name)}</span>`
+        : `<span class="twisty"></span><span class="icon">${fileIcon(entry.name)}</span><span class="name">${escapeHtml(entry.name)}</span>`;
+      row.onclick = () => {
+        if (entry.type === 'folder') { collapsedFolders.has(entry.path) ? collapsedFolders.delete(entry.path) : collapsedFolders.add(entry.path); renderFileTree(); }
+        else openFile(entry.path);
+      };
+      row.oncontextmenu = e => { e.preventDefault(); fileContextMenu(entry.path); };
+      host.appendChild(row);
+      if (entry.type === 'folder' && !collapsedFolders.has(entry.path)) walk(entry, depth + 1);
+    }
+  }
+  walk(root, 0);
+  if (!host.children.length) host.innerHTML = '<div class="empty-state">No files.</div>';
+}
+function fileIcon(name) {
+  const e = extname(name);
+  return ({ jsx: '⚛', js: 'JS', tsx: 'TS', ts: 'TS', css: '#', json: '{}', md: 'M' })[e] || '·';
+}
+function fileContextMenu(path) {
+  const action = prompt('File actions for ' + path + '\n\nType: rename, duplicate, move, delete', 'rename');
+  if (!action) return;
+  if (action === 'rename') renameFile(path);
+  else if (action === 'duplicate') duplicateFile(path);
+  else if (action === 'move') moveFile(path);
+  else if (action === 'delete') deleteFile(path);
+}
+
+function createFilePrompt() {
+  if (!state.project) return;
+  const p = prompt('New file path (e.g. components/Button.jsx):', '');
+  if (!p) return;
+  const path = normalizePath(p);
+  if (!path) return;
+  if (state.project.files[path]) { toast('A file with that path already exists.'); return; }
+  state.project.files[path] = { content: '' };
+  state.project.updatedAt = Date.now();
+  scheduleAutosave();
+  renderFileTree(); openFile(path);
+  if (state.settings.autoRun) scheduleCompile();
+}
+function createFolderPrompt() {
+  if (!state.project) return;
+  const p = prompt('New folder path:', '');
+  if (!p) return;
+  const folder = normalizePath(p);
+  if (!folder) return;
+  const keep = folder + '/.gitkeep';
+  if (state.project.files[keep]) { toast('Folder already exists.'); return; }
+  state.project.files[keep] = { content: '' };
+  state.project.updatedAt = Date.now();
+  scheduleAutosave(); renderFileTree();
+}
+function renameFile(path) {
+  const newPath = normalizePath(prompt('Rename to:', path));
+  if (!newPath || newPath === path) return;
+  if (state.project.files[newPath]) { toast('That path already exists.'); return; }
+  state.project.files[newPath] = state.project.files[path];
+  delete state.project.files[path];
+  if (state.openTabs.includes(path)) state.openTabs[state.openTabs.indexOf(path)] = newPath;
+  if (state.activeFile === path) state.activeFile = newPath;
+  if (state.dirtyFiles.has(path)) { state.dirtyFiles.delete(path); state.dirtyFiles.add(newPath); }
+  const model = state.models.get(path);
+  if (model) { model.dispose(); state.models.delete(path); }
+  state.project.updatedAt = Date.now();
+  scheduleAutosave(); renderTabs(); renderFileTree();
+  if (state.activeFile === newPath) openFile(newPath);
+  if (state.settings.autoRun) scheduleCompile();
+}
+function duplicateFile(path) {
+  const newPath = normalizePath(prompt('Duplicate to:', path.replace(/(\.[^.]+)$/, '-copy$1')));
+  if (!newPath) return;
+  state.project.files[newPath] = { ...state.project.files[path] };
+  state.project.updatedAt = Date.now();
+  scheduleAutosave(); renderFileTree(); openFile(newPath);
+}
+function moveFile(path) {
+  const newPath = normalizePath(prompt('Move to path:', path));
+  if (!newPath || newPath === path) return;
+  renameFileTo(path, newPath);
+}
+function renameFileTo(oldPath, newPath) {
+  if (state.project.files[newPath]) { toast('Destination exists.'); return; }
+  state.project.files[newPath] = state.project.files[oldPath];
+  delete state.project.files[oldPath];
+  if (state.openTabs.includes(oldPath)) state.openTabs[state.openTabs.indexOf(oldPath)] = newPath;
+  if (state.activeFile === oldPath) state.activeFile = newPath;
+  const model = state.models.get(oldPath);
+  if (model) { model.dispose(); state.models.delete(oldPath); }
+  state.project.updatedAt = Date.now();
+  scheduleAutosave(); renderTabs(); renderFileTree();
+  if (state.activeFile === newPath) openFile(newPath);
+}
+function deleteFile(path) {
+  if (!confirm('Delete "' + path + '"? This cannot be undone except from a snapshot or ZIP backup.')) return;
+  delete state.project.files[path];
+  if (state.openTabs.includes(path)) closeTab(path);
+  const model = state.models.get(path);
+  if (model) { model.dispose(); state.models.delete(path); }
+  state.project.updatedAt = Date.now();
+  scheduleAutosave(); renderTabs(); renderFileTree();
+  if (state.settings.autoRun) scheduleCompile();
+}
+
+/* -------------------------------------------------------------------------
+   Preview / messages
+   ------------------------------------------------------------------------- */
+function setStatus(status) {
+  state.status = status;
+  const labels = { idle: 'Idle', compiling: 'Compiling…', running: 'Running', ready: 'Ready', failed: 'Failed', stale: 'Stale', stopped: 'Stopped' };
+  const el = $('#previewStatus');
+  el.textContent = labels[status] || status;
+  el.className = 'status-pill ' + status;
+  $('#btnStop').disabled = !(status === 'running' || status === 'ready' || status === 'compiling' || status === 'stale');
+  if (status === 'failed') { /* problems panel remains available */ }
+}
+function scheduleCompile() {
+  clearTimeout(state.compileTimer);
+  setStatus('stale');
+  state.compileTimer = setTimeout(() => compileAndRun({ manual: false }), Math.max(250, state.settings.previewDebounce || 700));
+}
+async function compileAndRun({ manual = true } = {}) {
+  if (!state.project) return;
+  const buildId = ++state.buildCounter;
+  setStatus('compiling');
+  await sleep(10);
+  if (buildId !== state.buildCounter) return;
+
+  const snapshot = {
+    ...state.project,
+    files: JSON.parse(JSON.stringify(state.project.files || {}))
+  };
+  let result;
+  try { result = compileProject(snapshot); }
+  catch (err) {
+    result = { diagnostics: [{ severity: 'error', message: err.message || String(err), source: 'compiler', file: snapshot.entry }], fatal: true };
+  }
+  if (buildId !== state.buildCounter) return;
+
+  state.diagnostics = (result.diagnostics || []).filter(d => d.severity !== 'runtime');
+  renderProblems();
+
+  if (result.fatal) {
+    setStatus('failed');
+    appendConsole({ level: 'error', args: ['Compilation failed. See Problems panel.'], ts: Date.now(), synthetic: true });
+    return;
+  }
+
+  const session = uuid();
+  state.sessionId = session;
+  state.previewDoc = buildPreviewDocument(result, session);
+  const frame = $('#previewFrame');
+  frame.srcdoc = state.previewDoc;
+  setStatus('running');
+  if (manual) appendConsole({ level: 'info', args: ['Preview started.'], ts: Date.now(), synthetic: true });
+}
+
+function stopPreview() {
+  state.buildCounter++;
+  clearTimeout(state.compileTimer);
+  state.sessionId = null;
+  const frame = $('#previewFrame');
+  frame.srcdoc = '<!doctype html><html><body style="font-family:system-ui;background:#111;color:#888;display:grid;place-items:center;min-height:100vh;margin:0"><div style="text-align:center"><h2 style="margin:0 0 6px;color:#ccc">Preview stopped</h2><p style="margin:0;font-size:13px">Press Run to start again.</p></div></body></html>';
+  setStatus('stopped');
+}
+function refreshPreview() {
+  if (state.previewDoc && state.sessionId) {
+    const frame = $('#previewFrame');
+    frame.srcdoc = state.previewDoc;
+    setStatus('running');
+  } else {
+    compileAndRun({ manual: true });
+  }
+}
+
+window.addEventListener('message', e => {
+  const data = e.data;
+  if (!data || data.__reactlab !== true) return;
+  if (!state.sessionId || data.session !== state.sessionId) return;
+  const frame = $('#previewFrame');
+  if (!frame.contentWindow || e.source !== frame.contentWindow) return;
+  let size = 0;
+  try { size = JSON.stringify(data).length; } catch (err) { return; }
+  if (size > 150000) return;
+
+  if (data.type === 'console') {
+    appendConsole({ level: data.level || 'log', args: Array.isArray(data.args) ? data.args : [], ts: data.ts || Date.now() });
+  } else if (data.type === 'runtimeError') {
+    setStatus('failed');
+    state.diagnostics = state.diagnostics.filter(d => d.source !== 'runtime');
+    state.diagnostics.push({ severity: 'error', message: data.message || 'Runtime error', stack: data.stack, source: 'runtime', file: state.activeFile || state.project?.entry });
+    renderProblems();
+    appendConsole({ level: 'error', args: [data.message || 'Runtime error'], ts: Date.now(), synthetic: true });
+  } else if (data.type === 'resourceError') {
+    setStatus('failed');
+    state.diagnostics.push({ severity: 'error', message: data.message || 'Resource failed to load', source: 'runtime' });
+    renderProblems();
+    appendConsole({ level: 'error', args: [data.message || 'Resource failed to load'], ts: Date.now(), synthetic: true });
+  } else if (data.type === 'ready') {
+    if (state.status === 'running') setStatus('ready');
+  }
+});
+
+/* -------------------------------------------------------------------------
+   Console / problems
+   ------------------------------------------------------------------------- */
+function appendConsole(entry) {
+  if (entry.synthetic) entry.synthetic = true;
+  state.console.push(entry);
+  if (state.console.length > 500) state.console.splice(0, state.console.length - 500);
+  renderConsole();
+}
+function renderConsole() {
+  const list = $('#consoleList');
+  const filter = state.consoleFilter;
+  const q = state.consoleSearch.toLowerCase();
+  const entries = state.console.filter(e => {
+    if (filter !== 'all' && e.level !== filter) return false;
+    if (q && !JSON.stringify(e.args).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  list.innerHTML = '';
+  if (!entries.length) { list.innerHTML = '<div class="empty-state">No console output yet. Run the preview and console messages will appear here.</div>'; }
+  entries.forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'log-entry ' + e.level;
+    const lvl = e.level === 'error' ? '✖' : e.level === 'warn' ? '⚠' : e.level === 'info' ? 'ⓘ' : '›';
+    const time = new Date(e.ts).toLocaleTimeString([], { hour12: false });
+    div.innerHTML = `<span class="lvl">${lvl}</span><span class="ts">${time}</span><span class="args"></span>`;
+    const argsEl = div.querySelector('.args');
+    (e.args || []).forEach((arg, i) => {
+      if (i) argsEl.appendChild(document.createTextNode(' '));
+      if (typeof arg === 'object' && arg !== null) {
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = Array.isArray(arg) ? 'Array(' + arg.length + ')' : 'Object';
+        const pre = document.createElement('pre'); pre.textContent = safeStringify(arg);
+        details.appendChild(summary); details.appendChild(pre);
+        argsEl.appendChild(details);
+      } else {
+        argsEl.appendChild(document.createTextNode(String(arg)));
+      }
+    });
+    list.appendChild(div);
+  });
+  $('#consoleCount').textContent = state.console.length ? '(' + state.console.length + ')' : '';
+}
+function safeStringify(v) {
+  const seen = new WeakSet();
+  try {
+    return JSON.stringify(v, (k, val) => {
+      if (typeof val === 'object' && val !== null) {
+        if (seen.has(val)) return '[Circular]';
+        seen.add(val);
+      }
+      return val;
+    }, 2);
+  } catch (e) { return String(v); }
+}
+function clearConsole() { state.console = []; renderConsole(); }
+function copyConsole() {
+  const text = state.console.map(e => '[' + new Date(e.ts).toISOString() + '] ' + e.level.toUpperCase() + ' ' + (e.args || []).map(a => typeof a === 'object' ? safeStringify(a) : String(a)).join(' ')).join('\n');
+  navigator.clipboard && navigator.clipboard.writeText(text).then(() => toast('Console copied.'), () => toast('Could not copy console.'));
+}
+function renderProblems() {
+  const list = $('#problemsList');
+  list.innerHTML = '';
+  const probs = state.diagnostics || [];
+  $('#problemCount').textContent = probs.length ? '(' + probs.length + ')' : '';
+  if (!probs.length) { list.innerHTML = '<div class="empty-state">No problems detected.</div>'; return; }
+  probs.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'problem-row ' + (p.severity === 'warning' ? 'warning' : 'error');
+    row.innerHTML = `<span class="sev">${p.severity === 'warning' ? '⚠' : '✖'}</span><span class="msg">${escapeHtml(p.message || 'Unknown problem')}${p.source ? `<br><small style="color:var(--text-muted)">${escapeHtml(p.source)}</small>` : ''}</span><span class="loc">${p.file ? escapeHtml(basename(p.file)) + (p.line ? ':' + p.line : '') : ''}</span>`;
+    row.onclick = () => { if (p.file) openFile(p.file, p.line || 1, p.column || 1); };
+    list.appendChild(row);
+  });
+}
+function showPanel(name) {
+  $$('.panel-tabs button[data-panel]').forEach(b => b.classList.toggle('active', b.dataset.panel === name));
+  $('#consolePanel').hidden = name !== 'console';
+  $('#problemsPanel').hidden = name !== 'problems';
+  if (name === 'console') renderConsole();
+  if (name === 'problems') renderProblems();
+}
+
+/* -------------------------------------------------------------------------
+   Project dashboard / templates
+   ------------------------------------------------------------------------- */
+const PKG = name => JSON.stringify({
+  name: name || 'reactlab-app', private: true, version: '0.0.0',
+  type: 'module',
+  dependencies: { react: '^18.3.1', 'react-dom': '^18.3.1' },
+  devDependencies: { '@vitejs/plugin-react': '^4.3.1', vite: '^5.4.0' },
+  scripts: { dev: 'vite', build: 'vite build', preview: 'vite preview' }
+}, null, 2);
+
+function tpl(files) {
+  const out = {};
+  for (const [k, v] of Object.entries(files)) out[k] = typeof v === 'string' ? { content: v } : v;
+  return out;
+}
+
+const COMMON_MAIN = `import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+import './styles.css';
+
+createRoot(document.getElementById('root')).render(<App />);
+`;
+
+const TEMPLATES = {
+  hello: {
+    name: 'Hello World', description: 'Minimal React component with CSS.',
+    files: () => tpl({
+      'main.jsx': COMMON_MAIN,
+      'App.jsx': `import React from 'react';
+
+export default function App() {
+  return (
+    <main className="app">
+      <h1>Hello, ReactLab!</h1>
+      <p>Edit <code>App.jsx</code> and the preview updates automatically.</p>
+      <button onClick={() => alert('It works!')}>Try me</button>
+    </main>
+  );
+}
+`,
+      'styles.css': `body{margin:0;font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0}
+.app{min-height:100vh;display:grid;place-content:center;text-align:center;gap:1rem;padding:2rem}
+h1{font-size:2.5rem;margin:0}
+button{padding:.7rem 1.2rem;border:0;border-radius:8px;background:#38bdf8;color:#082f49;font-weight:600;cursor:pointer}
+`,
+      'package.json': PKG('hello-world')
+    })
+  },
+  counter: {
+    name: 'Counter', description: 'useState counter with reset.',
+    files: () => tpl({
+      'main.jsx': COMMON_MAIN,
+      'App.jsx': `import React, { useState } from 'react';
+
+export default function App() {
+  const [count, setCount] = useState(0);
+  return (
+    <main className="app">
+      <h1>Counter</h1>
+      <p className="count">{count}</p>
+      <div className="row">
+        <button onClick={() => setCount(c => c - 1)}>−1</button>
+        <button onClick={() => setCount(c => c + 1)}>+1</button>
+        <button className="secondary" onClick={() => setCount(0)}>Reset</button>
+      </div>
+    </main>
+  );
+}
+`,
+      'styles.css': `body{margin:0;font-family:system-ui,sans-serif;background:#111827;color:#f9fafb}
+.app{min-height:100vh;display:grid;place-content:center;text-align:center;gap:1rem;padding:2rem}
+.count{font-size:4rem;font-weight:800;margin:0}
+.row{display:flex;gap:.6rem;justify-content:center}
+button{padding:.7rem 1.1rem;border:0;border-radius:8px;background:#22c55e;color:#052e16;font-weight:700;cursor:pointer}
+button.secondary{background:#334155;color:#e2e8f0}
+`,
+      'package.json': PKG('counter')
+    })
+  },
+  todo: {
+    name: 'Todo App', description: 'Add, complete, edit and delete todos.',
+    files: () => tpl({
+      'main.jsx': COMMON_MAIN,
+      'App.jsx': `import React, { useState } from 'react';
+
+export default function App() {
+  const [todos, setTodos] = useState([
+    { id: 1, text: 'Try ReactLab', done: true },
+    { id: 2, text: 'Build something', done: false }
+  ]);
+  const [input, setInput] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
+
+  function addTodo(e) {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text) return;
+    setTodos(t => [...t, { id: Date.now(), text, done: false }]);
+    setInput('');
+  }
+  function toggle(id) {
+    setTodos(t => t.map(x => x.id === id ? { ...x, done: !x.done } : x));
+  }
+  function remove(id) {
+    setTodos(t => t.filter(x => x.id !== id));
+  }
+  function startEdit(todo) {
+    setEditingId(todo.id);
+    setEditText(todo.text);
+  }
+  function saveEdit(id) {
+    const text = editText.trim();
+    if (text) setTodos(t => t.map(x => x.id === id ? { ...x, text } : x));
+    setEditingId(null);
+  }
+
+  return (
+    <main className="app">
+      <h1>Todos</h1>
+      <form onSubmit={addTodo} className="add-row">
+        <input value={input} onChange={e => setInput(e.target.value)} placeholder="What needs doing?" />
+        <button type="submit">Add</button>
+      </form>
+      <ul className="list">
+        {todos.map(todo => (
+          <li key={todo.id} className={todo.done ? 'done' : ''}>
+            {editingId === todo.id ? (
+              <>
+                <input value={editText} onChange={e => setEditText(e.target.value)} autoFocus />
+                <button onClick={() => saveEdit(todo.id)}>Save</button>
+                <button className="secondary" onClick={() => setEditingId(null)}>Cancel</button>
+              </>
+            ) : (
+              <>
+                <input type="checkbox" checked={todo.done} onChange={() => toggle(todo.id)} />
+                <span className="text" onDoubleClick={() => startEdit(todo)}>{todo.text}</span>
+                <button className="secondary" onClick={() => startEdit(todo)}>Edit</button>
+                <button className="danger" onClick={() => remove(todo.id)}>Delete</button>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+      {!todos.length && <p className="empty">No todos yet.</p>}
+    </main>
+  );
+}
+`,
+      'styles.css': `body{margin:0;font-family:system-ui,sans-serif;background:#f8fafc;color:#0f172a}
+.app{max-width:560px;margin:0 auto;padding:2rem 1rem}
+h1{margin-top:0}
+.add-row{display:flex;gap:.5rem;margin-bottom:1rem}
+.add-row input{flex:1;padding:.6rem .7rem;border:1px solid #cbd5e1;border-radius:6px;font-size:1rem}
+button{padding:.55rem .8rem;border:0;border-radius:6px;background:#0ea5e9;color:#fff;font-weight:600;cursor:pointer}
+button.secondary{background:#e2e8f0;color:#0f172a}
+button.danger{background:#ef4444}
+.list{list-style:none;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.list li{display:flex;align-items:center;gap:.5rem;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:.55rem .7rem}
+.list li.done .text{text-decoration:line-through;color:#64748b}
+.list .text{flex:1;cursor:pointer}
+.list input[type=text],.list li > input:not([type]){flex:1;padding:.45rem;border:1px solid #cbd5e1;border-radius:6px}
+.empty{color:#64748b;text-align:center}
+`,
+      'package.json': PKG('todo-app')
+    })
+  },
+  landing: {
+    name: 'Responsive Landing', description: 'Responsive hero, features and CTA.',
+    files: () => tpl({
+      'main.jsx': COMMON_MAIN,
+      'App.jsx': `import React from 'react';
+
+export default function App() {
+  return (
+    <div className="page">
+      <header className="nav">
+        <strong>ReactLab</strong>
+        <nav><a href="#features">Features</a><a href="#pricing">Pricing</a><a className="cta" href="#start">Get started</a></nav>
+      </header>
+      <section className="hero">
+        <h1>Ship React ideas from any device.</h1>
+        <p>A focused browser IDE with Monaco, live preview and multi-file projects. No install, no backend.</p>
+        <a className="button" href="#start">Start building</a>
+      </section>
+      <section id="features" className="features">
+        <article><h3>Real editor</h3><p>Monaco Editor with JSX, tabs and diagnostics.</p></article>
+        <article><h3>Sandboxed preview</h3><p>Project code runs inside an isolated iframe.</p></article>
+        <article><h3>Local-first</h3><p>Projects persist in IndexedDB and export to ZIP.</p></article>
+      </section>
+      <footer>Built with ReactLab.</footer>
+    </div>
+  );
+}
+`,
+      'styles.css': `*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,sans-serif;background:#020617;color:#e2e8f0}
+.page{min-height:100vh}
+.nav{display:flex;justify-content:space-between;align-items:center;padding:1rem 5vw;border-bottom:1px solid #1e293b}
+.nav nav{display:flex;gap:1rem;align-items:center}
+.nav a{color:#94a3b8;text-decoration:none;font-size:.95rem}
+.nav a.cta{background:#38bdf8;color:#082f49;padding:.45rem .8rem;border-radius:6px;font-weight:700}
+.hero{max-width:760px;margin:0 auto;text-align:center;padding:14vh 5vw 10vh}
+.hero h1{font-size:clamp(2rem,6vw,4rem);line-height:1.05;margin:0 0 1rem}
+.hero p{color:#94a3b8;font-size:1.1rem;line-height:1.6;margin:0 auto 2rem;max-width:620px}
+.button{display:inline-block;background:#38bdf8;color:#082f49;padding:.85rem 1.4rem;border-radius:8px;font-weight:800;text-decoration:none}
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;max-width:1000px;margin:0 auto;padding:2rem 5vw 5rem}
+.features article{background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:1.3rem}
+.features h3{margin:0 0 .4rem}
+.features p{margin:0;color:#94a3b8;line-height:1.5}
+footer{text-align:center;padding:2rem;color:#64748b;border-top:1px solid #1e293b}
+@media(max-width:600px){.nav nav a:not(.cta){display:none}}
+`,
+      'package.json': PKG('responsive-landing')
+    })
+  },
+  form: {
+    name: 'Form Validation', description: 'Controlled form with validation.',
+    files: () => tpl({
+      'main.jsx': COMMON_MAIN,
+      'App.jsx': `import React, { useState } from 'react';
+
+export default function App() {
+  const [values, setValues] = useState({ name: '', email: '', password: '' });
+  const [errors, setErrors] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+
+  function validate(v) {
+    const e = {};
+    if (!v.name.trim()) e.name = 'Name is required.';
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v.email)) e.email = 'Enter a valid email.';
+    if (v.password.length < 8) e.password = 'Password must be at least 8 characters.';
+    return e;
+  }
+  function change(field, value) {
+    const next = { ...values, [field]: value };
+    setValues(next);
+    if (submitted) setErrors(validate(next));
+  }
+  function submit(e) {
+    e.preventDefault();
+    const eObj = validate(values);
+    setErrors(eObj);
+    setSubmitted(true);
+    if (!Object.keys(eObj).length) alert('Form submitted successfully!');
+  }
+
+  return (
+    <main className="app">
+      <h1>Create account</h1>
+      <form onSubmit={submit} noValidate>
+        <label>Name<input value={values.name} onChange={e => change('name', e.target.value)} />{errors.name && <small>{errors.name}</small>}</label>
+        <label>Email<input type="email" value={values.email} onChange={e => change('email', e.target.value)} />{errors.email && <small>{errors.email}</small>}</label>
+        <label>Password<input type="password" value={values.password} onChange={e => change('password', e.target.value)} />{errors.password && <small>{errors.password}</small>}</label>
+        <button type="submit">Create account</button>
+      </form>
+    </main>
+  );
+}
+`,
+      'styles.css': `body{margin:0;font-family:system-ui,sans-serif;background:#f1f5f9;color:#0f172a}
+.app{max-width:420px;margin:3rem auto;background:#fff;padding:1.5rem;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+h1{margin-top:0}
+form{display:flex;flex-direction:column;gap:1rem}
+label{display:flex;flex-direction:column;gap:.35rem;font-weight:600;font-size:.9rem}
+input{padding:.6rem .7rem;border:1px solid #cbd5e1;border-radius:6px;font-size:1rem}
+input:focus{outline:2px solid #0ea5e9;border-color:transparent}
+small{color:#dc2626;font-weight:500}
+button{padding:.7rem;border:0;border-radius:6px;background:#0ea5e9;color:#fff;font-weight:700;font-size:1rem;cursor:pointer}
+`,
+      'package.json': PKG('form-validation')
+    })
+  },
+  api: {
+    name: 'API Fetch Demo', description: 'Loading, error and success states.',
+    files: () => tpl({
+      'main.jsx': COMMON_MAIN,
+      'App.jsx': `import React, { useEffect, useState } from 'react';
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError('');
+    fetch('https://jsonplaceholder.typicode.com/users/1', { signal: controller.signal })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(data => setUser(data))
+      .catch(err => { if (err.name !== 'AbortError') setError(err.message); })
+      .finally(() => setLoading(false));
+    return () => controller.abort();
+  }, [reload]);
+
+  return (
+    <main className="app">
+      <h1>API Fetch</h1>
+      {loading && <p className="muted">Loading user…</p>}
+      {error && (
+        <div className="error">
+          <p>Could not load: {error}</p>
+          <button onClick={() => setReload(x => x + 1)}>Retry</button>
+        </div>
+      )}
+      {user && (
+        <div className="card">
+          <h2>{user.name}</h2>
+          <p>{user.email}</p>
+          <p>{user.company && user.company.name}</p>
+        </div>
+      )}
+      <button className="secondary" onClick={() => setReload(x => x + 1)}>Reload</button>
+    </main>
+  );
+}
+`,
+      'styles.css': `body{margin:0;font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0}
+.app{max-width:560px;margin:0 auto;padding:2rem 1rem;display:flex;flex-direction:column;gap:1rem}
+h1{margin:0}
+.muted{color:#94a3b8}
+.error{background:#450a0a;border:1px solid #7f1d1d;padding:1rem;border-radius:8px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:1rem}
+.card h2{margin:0 0 .3rem}
+.card p{margin:.25rem 0;color:#cbd5e1}
+button{padding:.55rem .8rem;border:0;border-radius:6px;background:#38bdf8;color:#082f49;font-weight:700;cursor:pointer}
+button.secondary{background:#334155;color:#e2e8f0;align-self:flex-start}
+`,
+      'package.json': PKG('api-fetch-demo')
+    })
+  },
+  library: {
+    name: 'Component Library', description: 'Reusable Button, Card and Badge components.',
+    files: () => tpl({
+      'main.jsx': COMMON_MAIN,
+      'App.jsx': `import React from 'react';
+import Button from './components/Button';
+import Card from './components/Card';
+import Badge from './components/Badge';
+
+export default function App() {
+  return (
+    <main className="app">
+      <h1>Component Library</h1>
+      <section className="row">
+        <Button>Primary</Button>
+        <Button variant="secondary">Secondary</Button>
+        <Button variant="danger">Danger</Button>
+      </section>
+      <section className="grid">
+        <Card title="Card one" badge={<Badge>New</Badge>}>
+          Reusable card content with a badge slot.
+        </Card>
+        <Card title="Card two">
+          Another card using the same component.
+        </Card>
+      </section>
+    </main>
+  );
+}
+`,
+      'components/Button.jsx': `import React from 'react';
+
+export default function Button({ children, variant = 'primary', ...rest }) {
+  return <button className={'btn ' + variant} {...rest}>{children}</button>;
+}
+`,
+      'components/Badge.jsx': `import React from 'react';
+
+export default function Badge({ children }) {
+  return <span className="badge">{children}</span>;
+}
+`,
+      'components/Card.jsx': `import React from 'react';
+
+export default function Card({ title, badge, children }) {
+  return (
+    <article className="card">
+      <header>{title}{badge}</header>
+      <div>{children}</div>
+    </article>
+  );
+}
+`,
+      'styles.css': `body{margin:0;font-family:system-ui,sans-serif;background:#f8fafc;color:#0f172a}
+.app{max-width:800px;margin:0 auto;padding:2rem 1rem}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.btn{padding:.55rem .9rem;border:0;border-radius:6px;font-weight:600;cursor:pointer}
+.btn.primary{background:#0ea5e9;color:#fff}
+.btn.secondary{background:#e2e8f0;color:#0f172a}
+.btn.danger{background:#ef4444;color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:1rem}
+.card header{display:flex;align-items:center;justify-content:space-between;font-weight:700;margin-bottom:.5rem}
+.badge{background:#dcfce7;color:#166534;padding:.15rem .45rem;border-radius:999px;font-size:.75rem}
+`,
+      'package.json': PKG('component-library')
+    })
+  },
+  hooks: {
+    name: 'Hooks Demo', description: 'useState, useEffect, useRef, useMemo and useReducer.',
+    files: () => tpl({
+      'main.jsx': COMMON_MAIN,
+      'App.jsx': `import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+
+function reducer(state, action) {
+  if (action.type === 'inc') return { count: state.count + 1 };
+  if (action.type === 'dec') return { count: state.count - 1 };
+  return state;
+}
+
+export default function App() {
+  const [text, setText] = useState('');
+  const inputRef = useRef(null);
+  const renders = useRef(0);
+  const [state, dispatch] = useReducer(reducer, { count: 0 });
+
+  useEffect(() => { renders.current += 1; document.title = 'Hooks Demo'; }, []);
+  useEffect(() => { if (inputRef.current) inputRef.current.focus(); }, []);
+  const length = useMemo(() => text.length, [text]);
+
+  return (
+    <main className="app">
+      <h1>Hooks Demo</h1>
+      <section>
+        <h2>useState + useRef</h2>
+        <input ref={inputRef} value={text} onChange={e => setText(e.target.value)} placeholder="Type here" />
+        <p>Length: {length}</p>
+        <p>Renders: {renders.current}</p>
+      </section>
+      <section>
+        <h2>useReducer</h2>
+        <p className="count">{state.count}</p>
+        <button onClick={() => dispatch({ type: 'dec' })}>−</button>
+        <button onClick={() => dispatch({ type: 'inc' })}>+</button>
+      </section>
+    </main>
+  );
+}
+`,
+      'styles.css': `body{margin:0;font-family:system-ui,sans-serif;background:#111827;color:#f9fafb}
+.app{max-width:600px;margin:0 auto;padding:2rem 1rem;display:flex;flex-direction:column;gap:1.5rem}
+h1{margin:0}
+h2{font-size:1.05rem;margin:0 0 .5rem;color:#93c5fd}
+section{background:#1f2937;border:1px solid #374151;border-radius:10px;padding:1rem}
+input{padding:.55rem .7rem;border:1px solid #4b5563;border-radius:6px;background:#111827;color:#f9fafb}
+button{margin-right:.5rem;padding:.45rem .8rem;border:0;border-radius:6px;background:#3b82f6;color:#fff;font-weight:700;cursor:pointer}
+.count{font-size:2rem;font-weight:800;margin:.2rem 0 .7rem}
+`,
+      'package.json': PKG('hooks-demo')
+    })
+  },
+  dashboard: {
+    name: 'Multi-file Dashboard', description: 'Header, sidebar, stat cards and composition.',
+    files: () => tpl({
+      'main.jsx': COMMON_MAIN,
+      'App.jsx': `import React from 'react';
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+import StatCard from './components/StatCard';
+
+export default function App() {
+  return (
+    <div className="layout">
+      <Sidebar />
+      <div className="main">
+        <Header />
+        <section className="stats">
+          <StatCard label="Revenue" value="$24,800" />
+          <StatCard label="Users" value="1,204" />
+          <StatCard label="Churn" value="2.1%" />
+        </section>
+        <section className="panel">
+          <h2>Recent activity</h2>
+          <p>Multi-file imports are working. This dashboard is composed from separate components.</p>
+        </section>
+      </div>
+    </div>
+  );
+}
+`,
+      'components/Header.jsx': `import React from 'react';
+
+export default function Header() {
+  return (
+    <header className="header">
+      <h1>Dashboard</h1>
+      <button>New report</button>
+    </header>
+  );
+}
+`,
+      'components/Sidebar.jsx': `import React from 'react';
+
+const links = ['Overview', 'Analytics', 'Customers', 'Settings'];
+
+export default function Sidebar() {
+  return (
+    <aside className="sidebar">
+      <strong>ReactLab</strong>
+      <nav>
+        {links.map(link => <button key={link} className={link === 'Overview' ? 'active' : ''}>{link}</button>)}
+      </nav>
+    </aside>
+  );
+}
+`,
+      'components/StatCard.jsx': `import React from 'react';
+
+export default function StatCard({ label, value }) {
+  return (
+    <article className="stat">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </article>
+  );
+}
+`,
+      'styles.css': `*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,sans-serif;background:#020617;color:#e2e8f0}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:200px;background:#0f172a;border-right:1px solid #1e293b;padding:1rem}
+.sidebar strong{display:block;margin-bottom:1rem}
+.sidebar nav{display:flex;flex-direction:column;gap:.3rem}
+.sidebar button{text-align:left;border:0;background:transparent;color:#94a3b8;padding:.45rem .5rem;border-radius:6px;cursor:pointer}
+.sidebar button.active{background:#1e293b;color:#e2e8f0}
+.main{flex:1;padding:1.2rem;min-width:0}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem}
+.header h1{margin:0;font-size:1.4rem}
+.header button{border:0;background:#38bdf8;color:#082f49;padding:.5rem .8rem;border-radius:6px;font-weight:700;cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.8rem;margin-bottom:1.2rem}
+.stat{background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:1rem;display:flex;flex-direction:column;gap:.4rem}
+.stat span{color:#94a3b8;font-size:.85rem}
+.stat strong{font-size:1.5rem}
+.panel{background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:1rem}
+.panel h2{margin-top:0;font-size:1.05rem}
+.panel p{color:#94a3b8;line-height:1.5}
+@media(max-width:650px){.sidebar{display:none}}
+`,
+      'package.json': PKG('multi-file-dashboard')
+    })
+  },
+  css: {
+    name: 'CSS Playground', description: 'Live CSS controls with React state.',
+    files: () => tpl({
+      'main.jsx': COMMON_MAIN,
+      'App.jsx': `import React, { useState } from 'react';
+
+export default function App() {
+  const [color, setColor] = useState('#38bdf8');
+  const [radius, setRadius] = useState(16);
+  const [shadow, setShadow] = useState(24);
+  const style = { background: color, borderRadius: radius + 'px', boxShadow: '0 ' + shadow + 'px ' + (shadow * 2) + 'px rgba(0,0,0,.35)' };
+
+  return (
+    <main className="app">
+      <h1>CSS Playground</h1>
+      <div className="stage"><div className="box" style={style}>Hello</div></div>
+      <div className="controls">
+        <label>Colour <input type="color" value={color} onChange={e => setColor(e.target.value)} /></label>
+        <label>Radius <input type="range" min="0" max="60" value={radius} onChange={e => setRadius(+e.target.value)} /></label>
+        <label>Shadow <input type="range" min="0" max="60" value={shadow} onChange={e => setShadow(+e.target.value)} /></label>
+      </div>
+    </main>
+  );
+}
+`,
+      'styles.css': `body{margin:0;font-family:system-ui,sans-serif;background:#0b1120;color:#e2e8f0}
+.app{max-width:640px;margin:0 auto;padding:2rem 1rem}
+h1{margin-top:0}
+.stage{display:grid;place-items:center;min-height:240px;background:#111827;border:1px solid #1f2937;border-radius:12px;margin-bottom:1rem}
+.box{width:180px;height:180px;display:grid;place-items:center;font-weight:800;color:#082f49;transition:.15s}
+.controls{display:flex;flex-direction:column;gap:.8rem}
+.controls label{display:flex;align-items:center;justify-content:space-between;background:#111827;border:1px solid #1f2937;padding:.7rem .9rem;border-radius:8px}
+`,
+      'package.json': PKG('css-playground')
+    })
+  }
+};
+
+function showDashboard() {
+  const projects = [...state.projects].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  const body = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn primary" id="dashNew">New from template</button>
+      <button class="btn" id="dashImport">Import ZIP</button>
+      <input id="dashFilter" placeholder="Search projects…" style="flex:1;min-width:160px">
+    </div>
+    <div id="dashList" class="dashboard-grid"></div>
+  `;
+  openModal({ title: 'Projects', body, size: 'medium' });
+  const list = $('#dashList');
+  function render() {
+    const q = ($('#dashFilter').value || '').toLowerCase();
+    const filtered = projects.filter(p => p.name.toLowerCase().includes(q));
+    list.innerHTML = '';
+    if (!filtered.length) {
+      list.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No projects yet. Create one from a template or import a ZIP.</div>';
+      return;
+    }
+    filtered.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'project-card';
+      card.innerHTML = `<div class="pc-name">${escapeHtml(p.name)}</div>
+        <div class="pc-meta">${Object.keys(p.files || {}).length} files · ${formatDate(p.updatedAt)}</div>
+        <div class="pc-actions">
+          <button class="btn small primary" data-act="open">Open</button>
+          <button class="btn small" data-act="rename">Rename</button>
+          <button class="btn small" data-act="duplicate">Duplicate</button>
+          <button class="btn small" data-act="export">Export</button>
+          <button class="btn small danger" data-act="delete">Delete</button>
+        </div>`;
+      card.querySelector('[data-act="open"]').onclick = () => { closeModal(); openProject(p.id); };
+      card.querySelector('[data-act="rename"]').onclick = async () => {
+        const name = prompt('Rename project:', p.name);
+        if (!name || name === p.name) return;
+        p.name = name; p.updatedAt = Date.now();
+        await persistProject(p); render(); renderTopbar();
+      };
+      card.querySelector('[data-act="duplicate"]').onclick = async () => {
+        const copy = JSON.parse(JSON.stringify(p));
+        copy.id = uuid(); copy.name = p.name + ' copy';
+        copy.createdAt = copy.updatedAt = Date.now();
+        await persistProject(copy); state.projects = await dbGetAll('projects'); render();
+      };
+      card.querySelector('[data-act="export"]').onclick = () => exportProject(p);
+      card.querySelector('[data-act="delete"]').onclick = async () => {
+        if (!confirm('Delete "' + p.name + '"? A snapshot will be saved first.')) return;
+        await saveSnapshot(p, 'before-delete');
+        await dbDelete('projects', p.id);
+        state.projects = await dbGetAll('projects');
+        if (state.project && state.project.id === p.id) { state.project = null; renderAll(); }
+        render(); toast('Project deleted. Snapshot saved.');
+      };
+      list.appendChild(card);
+    });
+  }
+  render();
+  $('#dashFilter').oninput = render;
+  $('#dashNew').onclick = showTemplatePicker;
+  $('#dashImport').onclick = () => $('#zipInput').click();
+}
+
+function showTemplatePicker() {
+  const body = '<div class="template-grid" id="templateGrid"></div>';
+  openModal({ title: 'Create from template', body, size: 'medium' });
+  const grid = $('#templateGrid');
+  Object.entries(TEMPLATES).forEach(([id, t]) => {
+    const card = document.createElement('button');
+    card.className = 'template-card';
+    card.innerHTML = `<strong>${escapeHtml(t.name)}</strong><span>${escapeHtml(t.description)}</span>`;
+    card.onclick = async () => {
+      const name = prompt('Project name:', t.name);
+      if (!name) return;
+      closeModal();
+      await createProjectFromTemplate(id, name);
+    };
+    grid.appendChild(card);
+  });
+}
+
+async function createProjectFromTemplate(templateId, name) {
+  const t = TEMPLATES[templateId];
+  if (!t) { toast('Unknown template.'); return; }
+  const project = {
+    id: uuid(), name: name || t.name, files: t.files(),
+    entry: 'main.jsx', dependencies: { react: '18.3.1', 'react-dom': '18.3.1' },
+    createdAt: Date.now(), updatedAt: Date.now(), templateId,
+    openTabs: ['main.jsx', 'App.jsx']
+  };
+  await persistProject(project);
+  state.projects = await dbGetAll('projects');
+  await openProject(project.id);
+  toast('Project created.');
+}
+
+async function openProject(id) {
+  await saveProjectNow();
+  disposeModels();
+  let p;
+  try { p = await dbGet('projects', id); }
+  catch (e) { toast('Could not open project: ' + e.message); return; }
+  if (!p) { toast('Project not found.'); return; }
+  state.project = p;
+  state.projects = state.projects.map(x => x.id === p.id ? p : x);
+  state.openTabs = (p.openTabs || []).filter(f => p.files[f]);
+  state.activeFile = state.openTabs[0] || Object.keys(p.files)[0] || null;
+  if (state.activeFile && !state.openTabs.includes(state.activeFile)) state.openTabs.push(state.activeFile);
+  state.dirtyFiles.clear();
+  state.diagnostics = [];
+  state.console = [];
+  state.settings.lastProjectId = p.id;
+  persistSettings();
+  closeModal();
+  renderAll();
+  if (state.activeFile) openFile(state.activeFile);
+  if (state.settings.autoRun) compileAndRun({ manual: false });
+  setStatus('idle');
+}
+
+/* -------------------------------------------------------------------------
+   Snapshots
+   ------------------------------------------------------------------------- */
+async function saveSnapshot(project, reason) {
+  try {
+    const snapshot = { id: uuid(), projectId: project.id, reason, createdAt: Date.now(), data: JSON.parse(JSON.stringify(project)) };
+    await dbPut('snapshots', snapshot);
+    return snapshot;
+  } catch (e) { console.warn('Snapshot failed', e); return null; }
+}
+
+/* -------------------------------------------------------------------------
+   ZIP export / import
+   ------------------------------------------------------------------------- */
+async function exportProject(project) {
+  if (!project) { toast('No project to export.'); return; }
+  try {
+    const zip = new JSZip();
+    for (const [path, file] of Object.entries(project.files || {})) {
+      if (file.encoding === 'base64') zip.file(path, file.content, { base64: true });
+      else zip.file(path, file.content || '');
+    }
+    if (!project.files['package.json']) zip.file('package.json', PKG(project.name));
+    zip.file('README.md', '# ' + project.name + '\n\nExported from ReactLab.\n\n## Run locally\n\n```bash\nnpm install\nnpm run dev\n```\n\n## Runtime\n\nThis project was authored in a browser-based React IDE. It uses React 18 and standard browser APIs. Packages outside the supported browser runtime are not included.\n');
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+    downloadBlob(blob, (project.name || 'reactlab-project').replace(/[^\w.-]+/g, '-') + '.zip');
+    toast('ZIP export started.');
+  } catch (err) { toast('Export failed: ' + err.message); }
+}
+
+async function importZip(file) {
+  try {
+    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const entries = Object.values(zip.files).filter(f => !f.dir);
+    if (!entries.length) { toast('ZIP contains no files.'); return; }
+    if (entries.length > 500) { toast('ZIP rejected: too many files (limit 500).'); return; }
+    if (file.size > 25 * 1024 * 1024) { toast('ZIP rejected: file is larger than 25 MB.'); return; }
+
+    const files = {};
+    const skipped = [];
+    for (const entry of entries) {
+      const raw = entry.name;
+      if (raw.includes('..') || raw.startsWith('/') || /^[a-zA-Z]:/.test(raw)) {
+        toast('ZIP rejected: unsafe path "' + raw + '".'); return;
+      }
+      const path = normalizePath(raw);
+      if (!path) continue;
+      const ext = extname(path);
+      try {
+        if (['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.woff', '.woff2', '.ttf'].includes(ext)) {
+          files[path] = { content: await entry.async('base64'), encoding: 'base64' };
+        } else if (['.js', '.jsx', '.ts', '.tsx', '.css', '.html', '.json', '.md', '.txt', '.svg'].includes(ext) || !ext) {
+          files[path] = { content: await entry.async('string') };
+        } else {
+          skipped.push(path);
+        }
+      } catch (e) { skipped.push(path); }
+    }
+    if (!Object.keys(files).length) { toast('No supported files found in ZIP.'); return; }
+    const name = file.name.replace(/\.zip$/i, '') || 'Imported project';
+    const project = {
+      id: uuid(), name: name + ' (imported)', files, entry: files['main.jsx'] ? 'main.jsx' : (Object.keys(files).find(p => /\.(jsx|tsx|js|ts)$/.test(p)) || Object.keys(files)[0]),
+      dependencies: { react: '18.3.1', 'react-dom': '18.3.1' },
+      createdAt: Date.now(), updatedAt: Date.now(), templateId: 'imported',
+      openTabs: Object.keys(files).slice(0, 2)
+    };
+    await persistProject(project);
+    state.projects = await dbGetAll('projects');
+    await openProject(project.id);
+    toast('Imported ' + Object.keys(files).length + ' files.' + (skipped.length ? ' Skipped ' + skipped.length + ' unsupported files.' : ''));
+  } catch (err) { toast('Import failed: ' + (err.message || err)); }
+}
+
+/* -------------------------------------------------------------------------
+   Search / command palette
+   ------------------------------------------------------------------------- */
+function searchProject(query) {
+  const q = String(query || '').toLowerCase();
+  if (!q || !state.project) return [];
+  const results = [];
+  for (const [path, file] of Object.entries(state.project.files || {})) {
+    if (typeof file.content !== 'string') continue;
+    const lines = file.content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const idx = lines[i].toLowerCase().indexOf(q);
+      if (idx !== -1) results.push({ path, line: i + 1, column: idx + 1, text: lines[i].trim().slice(0, 240) });
+      if (results.length >= 500) return results;
+    }
+  }
+  return results;
+}
+
+function showSearch() {
+  const body = `
+    <div style="display:flex;gap:6px">
+      <input id="searchInput" placeholder="Search across project…" style="flex:1" autofocus>
+      <button id="searchReplace" class="btn">Replace all…</button>
+    </div>
+    <div id="searchResults" style="margin-top:10px;max-height:50vh;overflow:auto;border:1px solid var(--border);border-radius:6px"></div>
+  `;
+  openModal({ title: 'Search project', body, size: 'medium' });
+  const input = $('#searchInput'), results = $('#searchResults');
+  function run() {
+    const list = searchProject(input.value);
+    results.innerHTML = '';
+    if (!input.value.trim()) { results.innerHTML = '<div class="empty-state">Type to search all project files.</div>'; return; }
+    if (!list.length) { results.innerHTML = '<div class="empty-state">No matches.</div>'; return; }
+    list.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'search-result';
+      row.innerHTML = `<div class="file">${escapeHtml(r.path)}:${r.line}:${r.column}</div><div class="line">${escapeHtml(r.text)}</div>`;
+      row.onclick = () => { closeModal(); openFile(r.path, r.line, r.column); };
+      results.appendChild(row);
+    });
+  }
+  input.oninput = run;
+  input.onkeydown = e => { if (e.key === 'Enter') run(); };
+  $('#searchReplace').onclick = () => {
+    const find = input.value;
+    if (!find) { toast('Enter search text first.'); return; }
+    const replace = prompt('Replace "' + find + '" with:', '');
+    if (replace === null) return;
+    if (!confirm('Replace all occurrences across the project?')) return;
+    let count = 0;
+    for (const file of Object.values(state.project.files)) {
+      if (typeof file.content !== 'string') continue;
+      const before = file.content;
+      file.content = file.content.split(find).join(replace);
+      if (file.content !== before) count++;
+    }
+    state.project.updatedAt = Date.now();
+    scheduleAutosave(); renderTabs(); renderFileTree();
+    if (state.activeFile) openFile(state.activeFile);
+    if (state.settings.autoRun) scheduleCompile();
+    toast('Replaced text in ' + count + ' file(s).');
+    run();
+  };
+  setTimeout(() => input.focus(), 50);
+}
+
+function showCommandPalette() {
+  const body = `<input id="paletteInput" placeholder="Type a command or file name…" style="width:100%" autofocus><div id="paletteList" class="palette-list"></div>`;
+  openModal({ title: 'Command palette', body, size: 'small' });
+  const input = $('#paletteInput'), list = $('#paletteList');
+  const commands = [
+    { label: 'Run preview', hint: 'Ctrl+Enter', run: () => compileAndRun({ manual: true }) },
+    { label: 'Stop preview', hint: '', run: stopPreview },
+    { label: 'Save project', hint: 'Ctrl+S', run: saveProjectNow },
+    { label: 'New file', hint: '', run: createFilePrompt },
+    { label: 'New folder', hint: '', run: createFolderPrompt },
+    { label: 'Search project', hint: '', run: showSearch },
+    { label: 'Project dashboard', hint: '', run: showDashboard },
+    { label: 'Settings', hint: '', run: showSettings },
+    { label: 'Toggle theme', hint: '', run: toggleTheme },
+    { label: 'Export ZIP', hint: '', run: () => exportProject(state.project) },
+    { label: 'Import ZIP', hint: '', run: () => $('#zipInput').click() },
+    { label: 'Toggle console panel', hint: '', run: () => { document.body.classList.toggle('panel-collapsed'); } },
+    { label: 'Full-screen preview', hint: '', run: toggleFullscreenPreview },
+    ...(state.project ? Object.keys(state.project.files).map(path => ({ label: 'Open ' + path, hint: 'file', run: () => openFile(path) })) : [])
+  ];
+  let filtered = commands, active = 0;
+  function render() {
+    list.innerHTML = '';
+    if (!filtered.length) { list.innerHTML = '<div class="empty-state">No commands.</div>'; return; }
+    filtered.forEach((c, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'palette-item' + (i === active ? ' active' : '');
+      btn.innerHTML = `<span>${escapeHtml(c.label)}</span>${c.hint ? `<span class="hint">${escapeHtml(c.hint)}</span>` : ''}`;
+      btn.onclick = () => { closeModal(); c.run(); };
+      list.appendChild(btn);
+    });
+  }
+  function filter() {
+    const q = input.value.toLowerCase().trim();
+    filtered = commands.filter(c => c.label.toLowerCase().includes(q));
+    active = 0; render();
+  }
+  input.oninput = filter;
+  input.onkeydown = e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(filtered.length - 1, active + 1); render(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(0, active - 1); render(); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (filtered[active]) { closeModal(); filtered[active].run(); } }
+  };
+  render(); setTimeout(() => input.focus(), 50);
+}
+
+/* -------------------------------------------------------------------------
+   Settings
+   ------------------------------------------------------------------------- */
+function showSettings() {
+  const s = state.settings;
+  const body = `
+    <div class="form-grid">
+      <div class="form-row"><label>Theme</label><select id="setTheme"><option value="dark">Dark</option><option value="light">Light</option></select></div>
+      <div class="form-row"><label>Font size</label><input id="setFontSize" type="number" min="10" max="28" value="${s.fontSize}"></div>
+      <div class="form-row"><label>Font family</label><input id="setFontFamily" value="${escapeHtml(s.fontFamily)}"></div>
+      <div class="form-row"><label>Tab size</label><select id="setTabSize"><option>2</option><option>4</option><option>8</option></select></div>
+      <div class="form-row"><label>Word wrap</label><select id="setWordWrap"><option value="off">Off</option><option value="on">On</option><option value="wordWrapColumn">Column</option></select></div>
+      <div class="form-row"><label>Default viewport</label><select id="setViewport"><option value="desktop">Desktop</option><option value="tablet">Tablet</option><option value="mobile">Mobile</option></select></div>
+      <div class="form-row"><label>Entry file</label><input id="setEntry" value="${escapeHtml(s.entry)}"></div>
+      <div class="form-row"><label>Preview debounce (ms)</label><input id="setDebounce" type="number" min="250" max="5000" value="${s.previewDebounce}"></div>
+    </div>
+    <div class="check-row"><input type="checkbox" id="setMinimap"><label for="setMinimap">Minimap</label></div>
+    <div class="check-row"><input type="checkbox" id="setLineNumbers"><label for="setLineNumbers">Line numbers</label></div>
+    <div class="check-row"><input type="checkbox" id="setAutoRun"><label for="setAutoRun">Run automatically after edits</label></div>
+    <div class="check-row"><input type="checkbox" id="setConsole"><label for="setConsole">Show console panel</label></div>
+    <div class="check-row"><input type="checkbox" id="setErrorOverlay"><label for="setErrorOverlay">Show runtime error overlay</label></div>
+    <hr style="border:0;border-top:1px solid var(--border);margin:14px 0">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="setStorage">Storage estimate</button>
+      <button class="btn danger" id="setClear">Clear all local data…</button>
+    </div>
+    <div id="storageDetail" style="margin-top:8px;font-size:11px;color:var(--text-muted)"></div>
+  `;
+  openModal({ title: 'Settings', body, size: 'medium', footer: '<button class="btn" data-close>Cancel</button><button class="btn primary" id="saveSettings">Save settings</button>' });
+  $('#setTheme').value = s.theme; $('#setTabSize').value = String(s.tabSize); $('#setWordWrap').value = s.wordWrap;
+  $('#setViewport').value = s.defaultViewport; $('#setMinimap').checked = !!s.minimap;
+  $('#setLineNumbers').checked = !!s.lineNumbers; $('#setAutoRun').checked = !!s.autoRun;
+  $('#setConsole').checked = !!s.consoleVisible; $('#setErrorOverlay').checked = !!s.errorOverlay;
+  $('#setStorage').onclick = async () => {
+    const d = $('#storageDetail');
+    if (navigator.storage && navigator.storage.estimate) {
+      const est = await navigator.storage.estimate();
+      d.textContent = 'Usage: ' + (est.usage / 1024 / 1024).toFixed(1) + ' MB of approximately ' + (est.quota / 1024 / 1024 / 1024).toFixed(1) + ' GB quota.';
+    } else d.textContent = 'Storage estimate is not supported by this browser.';
+  };
+  $('#setClear').onclick = async () => {
+    if (!confirm('Delete ALL ReactLab projects and preferences from this browser? This cannot be undone.')) return;
+    if (!confirm('Really delete all local data? Export any important projects first.')) return;
+    try {
+      await new Promise((res, rej) => {
+        const req = indexedDB.deleteDatabase(DB_NAME);
+        req.onsuccess = res; req.onerror = () => rej(req.error); req.onblocked = () => rej(new Error('Blocked'));
+      });
+      location.reload();
+    } catch (e) { toast('Could not clear data: ' + e.message); }
+  };
+  $('#saveSettings').onclick = async () => {
+    state.settings.theme = $('#setTheme').value;
+    state.settings.fontSize = Math.max(10, Math.min(28, +$('#setFontSize').value || 14));
+    state.settings.fontFamily = $('#setFontFamily').value || DEFAULT_SETTINGS.fontFamily;
+    state.settings.tabSize = +$('#setTabSize').value || 2;
+    state.settings.wordWrap = $('#setWordWrap').value;
+    state.settings.defaultViewport = $('#setViewport').value;
+    state.settings.entry = normalizePath($('#setEntry').value) || 'main.jsx';
+    state.settings.previewDebounce = Math.max(250, Math.min(5000, +$('#setDebounce').value || 700));
+    state.settings.minimap = $('#setMinimap').checked;
+    state.settings.lineNumbers = $('#setLineNumbers').checked;
+    state.settings.autoRun = $('#setAutoRun').checked;
+    state.settings.consoleVisible = $('#setConsole').checked;
+    state.settings.errorOverlay = $('#setErrorOverlay').checked;
+    await persistSettings();
+    applySettings();
+    closeModal();
+    toast('Settings saved.');
+  };
+}
+
+function applySettings() {
+  document.body.dataset.theme = state.settings.theme;
+  $('#viewportSelect').value = state.settings.defaultViewport;
+  setViewport(state.settings.defaultViewport);
+  if (state.editor) {
+    state.editor.updateOptions({
+      theme: monacoTheme(), fontSize: state.settings.fontSize, fontFamily: state.settings.fontFamily,
+      tabSize: state.settings.tabSize, wordWrap: state.settings.wordWrap,
+      minimap: { enabled: !!state.settings.minimap }, lineNumbers: state.settings.lineNumbers ? 'on' : 'off'
+    });
+  }
+  if (!state.settings.consoleVisible) document.body.classList.add('panel-collapsed');
+  else document.body.classList.remove('panel-collapsed');
+}
+
+function toggleTheme() {
+  state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
+  persistSettings(); applySettings();
+}
+function setViewport(v) {
+  const el = $('#previewViewport');
+  el.className = v;
+}
+function toggleFullscreenPreview() {
+  const pane = $('#previewPane');
+  pane.classList.toggle('fullscreen');
+  document.body.classList.toggle('preview-fullscreen');
+}
+function switchMobileView(view) {
+  state.mobileView = view;
+  document.body.className = document.body.className.replace(/mobile-view-\w+/g, '');
+  document.body.classList.add('mobile-view-' + view);
+  $$('#mobileNav button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+}
+
+/* -------------------------------------------------------------------------
+   Modal helpers
+   ------------------------------------------------------------------------- */
+function openModal({ title, body, size = '', footer = '' }) {
+  closeModal();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'activeModal';
+  overlay.innerHTML = `<div class="modal ${size}" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
+    <div class="modal-head"><h2>${escapeHtml(title)}</h2><button class="icon-btn" data-close aria-label="Close">×</button></div>
+    <div class="modal-body">${body}</div>
+    ${footer ? `<div class="modal-foot">${footer}</div>` : ''}
+  </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay || e.target.closest('[data-close]')) closeModal(); });
+  $('#modalRoot').appendChild(overlay);
+  setTimeout(() => { const f = overlay.querySelector('input,select,button'); if (f) f.focus(); }, 30);
+}
+function closeModal() {
+  const m = $('#activeModal');
+  if (m) m.remove();
+}
+
+/* -------------------------------------------------------------------------
+   Rendering
+   ------------------------------------------------------------------------- */
+function renderTopbar() {
+  $('#projectName').textContent = state.project ? state.project.name : 'No project';
+  $('#btnRun').disabled = !state.project;
+}
+function renderAll() {
+  renderTopbar();
+  renderFileTree();
+  renderTabs();
+  renderProblems();
+  renderConsole();
+  const storage = $('#storageInfo');
+  if (navigator.storage && navigator.storage.estimate) {
+    navigator.storage.estimate().then(est => {
+      storage.textContent = 'Storage: ' + (est.usage / 1024 / 1024).toFixed(1) + ' MB used';
+    }).catch(() => { storage.textContent = 'Storage: —'; });
+  }
+  if (state.settings.consoleVisible) document.body.classList.remove('panel-collapsed');
+  else document.body.classList.add('panel-collapsed');
+  setViewport(state.settings.defaultViewport || 'desktop');
+  switchMobileView(window.innerWidth <= 760 ? (state.settings.mobileView || 'editor') : 'editor');
+}
+
+/* -------------------------------------------------------------------------
+   Events / shortcuts
+   ------------------------------------------------------------------------- */
+function bindEvents() {
+  $('#btnDashboard').onclick = showDashboard;
+  $('#btnProject').onclick = showDashboard;
+  $('#btnRun').onclick = () => compileAndRun({ manual: true });
+  $('#btnStop').onclick = stopPreview;
+  $('#btnPalette').onclick = showCommandPalette;
+  $('#btnSearch').onclick = showSearch;
+  $('#btnTheme').onclick = toggleTheme;
+  $('#btnSettings').onclick = showSettings;
+  $('#btnRefresh').onclick = refreshPreview;
+  $('#btnFullscreenPreview').onclick = toggleFullscreenPreview;
+  $('#btnToggleConsole').onclick = () => { document.body.classList.toggle('panel-collapsed'); switchMobileView('console'); };
+  $('#btnNewFile').onclick = createFilePrompt;
+  $('#btnNewFolder').onclick = createFolderPrompt;
+  $('#fileFilter').oninput = renderFileTree;
+  $('#btnClearConsole').onclick = clearConsole;
+  $('#btnCopyConsole').onclick = copyConsole;
+  $('#btnCollapsePanel').onclick = () => document.body.classList.toggle('panel-collapsed');
+  $('#consoleFilter').onchange = e => { state.consoleFilter = e.target.value; renderConsole(); };
+  $('#consoleSearch').oninput = e => { state.consoleSearch = e.target.value; renderConsole(); };
+  $('#viewportSelect').onchange = e => setViewport(e.target.value);
+  $$('.panel-tabs button[data-panel]').forEach(b => b.onclick = () => showPanel(b.dataset.panel));
+  $$('#mobileNav button').forEach(b => b.onclick = () => switchMobileView(b.dataset.view));
+  $('#zipInput').onchange = async e => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (f) await importZip(f);
+  };
+
+  window.addEventListener('keydown', e => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); saveProjectNow(); }
+    else if (mod && e.key === 'Enter') { e.preventDefault(); compileAndRun({ manual: true }); }
+    else if (mod && e.key.toLowerCase() === 'k') { e.preventDefault(); showCommandPalette(); }
+    else if (mod && e.key.toLowerCase() === 'p') { e.preventDefault(); showCommandPalette(); }
+    else if (mod && e.key.toLowerCase() === 'f' && !state.editor) { e.preventDefault(); showSearch(); }
+    else if (e.key === 'Escape') closeModal();
+  });
+
+  window.addEventListener('beforeunload', e => {
+    if (state.dirtyFiles.size && state.project) {
+      // Best-effort save; IndexedDB writes are asynchronous and may not finish.
+      saveProjectNow();
+    }
+  });
+
+  // Split handle
+  let dragging = false;
+  const handle = $('#splitHandle');
+  handle.addEventListener('mousedown', () => { dragging = true; document.body.style.cursor = 'col-resize'; });
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const workspace = $('#workspace');
+    const rect = workspace.getBoundingClientRect();
+    const pct = Math.max(25, Math.min(75, ((e.clientX - rect.left) / rect.width) * 100));
+    $('#editorPane').style.flexBasis = pct + '%';
+    $('#previewPane').style.flexBasis = (100 - pct) + '%';
+  });
+  window.addEventListener('mouseup', () => { dragging = false; document.body.style.cursor = ''; });
+
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (window.innerWidth <= 760) switchMobileView(state.mobileView || 'editor');
+      else { document.body.classList.remove('mobile-view-files','mobile-view-editor','mobile-view-preview','mobile-view-console','mobile-view-problems'); }
+    }, 150);
+  });
+}
+
+/* -------------------------------------------------------------------------
+   Init
+   ------------------------------------------------------------------------- */
+(async function init() {
+  bindEvents();
+  try {
+    setLoaderStatus('Loading JSX compiler…');
+    await loadScript(CDN.babel);
+    setLoaderStatus('Loading ZIP library…');
+    await loadScript(CDN.jszip);
+    setLoaderStatus('Opening project storage…');
+    state.db = await openDatabase();
+    await loadSettings();
+    state.projects = await dbGetAll('projects');
+    document.body.dataset.theme = state.settings.theme;
+    applySettings();
+    renderAll();
+    hideLoader();
+
+    setLoaderStatus('Loading Monaco Editor…');
+    initMonaco().then(() => {
+      if (state.activeFile) openFile(state.activeFile);
+    });
+
+    const last = state.settings.lastProjectId;
+    if (last && state.projects.some(p => p.id === last)) {
+      await openProject(last);
+    } else if (state.projects.length) {
+      await openProject(state.projects.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0].id);
+    } else {
+      showDashboard();
+    }
+  } catch (err) {
+    showLoaderError(err);
+  }
+})();
+</script>
+</body>
+</html>
